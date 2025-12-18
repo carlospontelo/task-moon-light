@@ -1,33 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Task } from '@/types/task';
+import { Task, TaskStatus, TaskTag } from '@/types/task';
 
 const STORAGE_KEY = 'tasks-storage';
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Migrate old tasks with 'completed' field to new 'status' field
+      return parsed.map((task: any) => ({
+        ...task,
+        status: task.status || (task.completed ? 'completed' : 'pending'),
+      }));
+    }
+    return [];
   });
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks]);
 
-  const addTask = (title: string, date: string) => {
+  const addTask = (title: string, date: string, tag?: TaskTag) => {
     const newTask: Task = {
       id: crypto.randomUUID(),
       title,
-      completed: false,
+      status: 'pending',
+      tag,
       date,
       createdAt: new Date().toISOString(),
     };
     setTasks((prev) => [newTask, ...prev]);
   };
 
-  const toggleTask = (id: string) => {
+  const updateTaskStatus = (id: string, status: TaskStatus) => {
     setTasks((prev) =>
       prev.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+        task.id === id ? { ...task, status } : task
       )
     );
   };
@@ -43,7 +52,7 @@ export function useTasks() {
   return {
     tasks,
     addTask,
-    toggleTask,
+    updateTaskStatus,
     deleteTask,
     getTasksByDate,
   };

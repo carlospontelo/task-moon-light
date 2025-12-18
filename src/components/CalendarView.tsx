@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Task } from '@/types/task';
+import { Task, TaskStatus, TAG_COLORS } from '@/types/task';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   format,
   startOfWeek,
@@ -9,28 +8,38 @@ import {
   startOfMonth,
   endOfMonth,
   eachDayOfInterval,
-  isSameDay,
   isSameMonth,
   addWeeks,
   subWeeks,
   addMonths,
   subMonths,
   isToday,
-  parseISO,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, CalendarDays, Grid3X3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Grid3X3, Circle, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CalendarViewProps {
   tasks: Task[];
   getTasksByDate: (date: string) => Task[];
-  onToggle: (id: string) => void;
+  onUpdateStatus: (id: string, status: TaskStatus) => void;
 }
 
 type ViewMode = 'week' | 'month';
 
-export function CalendarView({ tasks, getTasksByDate, onToggle }: CalendarViewProps) {
+const STATUS_ICONS: Record<TaskStatus, React.ReactNode> = {
+  pending: <Circle className="h-3 w-3" />,
+  in_progress: <Clock className="h-3 w-3" />,
+  completed: <CheckCircle2 className="h-3 w-3" />,
+};
+
+const STATUS_COLORS: Record<TaskStatus, string> = {
+  pending: 'text-muted-foreground',
+  in_progress: 'text-amber-400',
+  completed: 'text-emerald-400',
+};
+
+export function CalendarView({ tasks, getTasksByDate, onUpdateStatus }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('week');
 
@@ -176,21 +185,33 @@ export function CalendarView({ tasks, getTasksByDate, onToggle }: CalendarViewPr
                       key={task.id}
                       className={cn(
                         "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs",
-                        "bg-muted/50 hover:bg-muted transition-colors",
-                        task.completed && "opacity-60"
+                        "bg-muted/50 hover:bg-muted transition-colors cursor-pointer",
+                        task.status === 'completed' && "opacity-60"
                       )}
+                      onClick={() => {
+                        const nextStatus: Record<TaskStatus, TaskStatus> = {
+                          pending: 'in_progress',
+                          in_progress: 'completed',
+                          completed: 'pending',
+                        };
+                        onUpdateStatus(task.id, nextStatus[task.status]);
+                      }}
                     >
-                      <Checkbox
-                        checked={task.completed}
-                        onCheckedChange={() => onToggle(task.id)}
-                        className="h-3.5 w-3.5"
-                      />
+                      <span className={STATUS_COLORS[task.status]}>
+                        {STATUS_ICONS[task.status]}
+                      </span>
                       <span className={cn(
                         "truncate flex-1",
-                        task.completed && "line-through text-muted-foreground"
+                        task.status === 'completed' && "line-through text-muted-foreground"
                       )}>
                         {task.title}
                       </span>
+                      {task.tag && (
+                        <span className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          TAG_COLORS[task.tag].bg.replace('/20', '')
+                        )} />
+                      )}
                     </div>
                   ))}
                   {dayTasks.length > (viewMode === 'week' ? 10 : 3) && (

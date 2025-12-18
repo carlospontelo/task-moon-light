@@ -1,70 +1,69 @@
 import { useMemo } from 'react';
-import { Task } from '@/types/task';
+import { Task, TaskStatus, TaskTag } from '@/types/task';
 import { TaskItem } from './TaskItem';
 import { AddTaskForm } from './AddTaskForm';
-import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
 
 interface TodoViewProps {
   tasks: Task[];
-  onAdd: (title: string, date: string) => void;
-  onToggle: (id: string) => void;
+  onAdd: (title: string, date: string, tag?: TaskTag) => void;
+  onUpdateStatus: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
 }
 
-export function TodoView({ tasks, onAdd, onToggle, onDelete }: TodoViewProps) {
-  const { pending, completed, overdue } = useMemo(() => {
+export function TodoView({ tasks, onAdd, onUpdateStatus, onDelete }: TodoViewProps) {
+  const { pending, inProgress, completed } = useMemo(() => {
     const pending: Task[] = [];
+    const inProgress: Task[] = [];
     const completed: Task[] = [];
-    const overdue: Task[] = [];
 
     tasks.forEach((task) => {
-      if (task.completed) {
-        completed.push(task);
-      } else if (isPast(parseISO(task.date)) && !isToday(parseISO(task.date))) {
-        overdue.push(task);
-      } else {
-        pending.push(task);
+      switch (task.status) {
+        case 'pending':
+          pending.push(task);
+          break;
+        case 'in_progress':
+          inProgress.push(task);
+          break;
+        case 'completed':
+          completed.push(task);
+          break;
       }
     });
 
     // Sort by date
     pending.sort((a, b) => a.date.localeCompare(b.date));
-    overdue.sort((a, b) => a.date.localeCompare(b.date));
+    inProgress.sort((a, b) => a.date.localeCompare(b.date));
     completed.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-    return { pending, completed, overdue };
+    return { pending, inProgress, completed };
   }, [tasks]);
-
-  const today = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
 
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-semibold text-foreground">Tarefas</h1>
-        <p className="text-muted-foreground font-mono text-sm capitalize">{today}</p>
       </div>
 
       {/* Add Task */}
       <AddTaskForm onAdd={onAdd} />
 
-      {/* Overdue Tasks */}
-      {overdue.length > 0 && (
+      {/* In Progress Tasks */}
+      {inProgress.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-destructive">
+          <div className="flex items-center gap-2 text-amber-400">
             <Clock className="h-4 w-4" />
             <h2 className="text-sm font-medium uppercase tracking-wider">
-              Atrasadas ({overdue.length})
+              Em Andamento ({inProgress.length})
             </h2>
           </div>
           <div className="space-y-3">
-            {overdue.map((task) => (
+            {inProgress.map((task) => (
               <TaskItem
                 key={task.id}
                 task={task}
-                onToggle={onToggle}
+                onUpdateStatus={onUpdateStatus}
                 onDelete={onDelete}
               />
             ))}
@@ -86,7 +85,7 @@ export function TodoView({ tasks, onAdd, onToggle, onDelete }: TodoViewProps) {
               <TaskItem
                 key={task.id}
                 task={task}
-                onToggle={onToggle}
+                onUpdateStatus={onUpdateStatus}
                 onDelete={onDelete}
               />
             ))}
@@ -97,7 +96,7 @@ export function TodoView({ tasks, onAdd, onToggle, onDelete }: TodoViewProps) {
       {/* Completed Tasks */}
       {completed.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-emerald-400">
             <CheckCircle2 className="h-4 w-4" />
             <h2 className="text-sm font-medium uppercase tracking-wider">
               Concluídas ({completed.length})
@@ -108,7 +107,7 @@ export function TodoView({ tasks, onAdd, onToggle, onDelete }: TodoViewProps) {
               <TaskItem
                 key={task.id}
                 task={task}
-                onToggle={onToggle}
+                onUpdateStatus={onUpdateStatus}
                 onDelete={onDelete}
               />
             ))}

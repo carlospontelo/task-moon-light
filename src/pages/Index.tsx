@@ -7,7 +7,7 @@ import { CheckSquare } from 'lucide-react';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'todo' | 'calendar'>('todo');
-  const { tasks, addTask, toggleTask, deleteTask, getTasksByDate } = useTasks();
+  const { tasks, addTask, updateTaskStatus, deleteTask, getTasksByDate } = useTasks();
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,14 +44,14 @@ const Index = () => {
             <TodoView
               tasks={tasks}
               onAdd={addTask}
-              onToggle={toggleTask}
+              onUpdateStatus={updateTaskStatus}
               onDelete={deleteTask}
             />
           ) : (
             <CalendarView
               tasks={tasks}
               getTasksByDate={getTasksByDate}
-              onToggle={toggleTask}
+              onUpdateStatus={updateTaskStatus}
             />
           )}
         </main>

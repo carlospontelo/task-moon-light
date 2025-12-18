@@ -1,45 +1,96 @@
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { Trash2, Calendar } from 'lucide-react';
-import { Task } from '@/types/task';
+import { Trash2, Calendar, Circle, Clock, CheckCircle2 } from 'lucide-react';
+import { Task, TaskStatus, STATUS_LABELS, TAG_COLORS, TAG_LABELS } from '@/types/task';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface TaskItemProps {
   task: Task;
-  onToggle: (id: string) => void;
+  onUpdateStatus: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
 }
 
-export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
+const STATUS_ICONS: Record<TaskStatus, React.ReactNode> = {
+  pending: <Circle className="h-4 w-4" />,
+  in_progress: <Clock className="h-4 w-4" />,
+  completed: <CheckCircle2 className="h-4 w-4" />,
+};
+
+const STATUS_COLORS: Record<TaskStatus, string> = {
+  pending: 'text-muted-foreground hover:text-foreground',
+  in_progress: 'text-amber-400 hover:text-amber-300',
+  completed: 'text-emerald-400 hover:text-emerald-300',
+};
+
+export function TaskItem({ task, onUpdateStatus, onDelete }: TaskItemProps) {
   return (
     <div
       className={cn(
         "group flex items-center gap-4 p-4 rounded-xl bg-card border border-border",
         "transition-all duration-300 hover:border-primary/30 hover:bg-card/80",
-        "animate-slide-up"
+        "animate-slide-up",
+        task.status === 'completed' && "opacity-60"
       )}
     >
-      <Checkbox
-        checked={task.completed}
-        onCheckedChange={() => onToggle(task.id)}
-      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={cn(STATUS_COLORS[task.status], "transition-colors")}
+          >
+            {STATUS_ICONS[task.status]}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {(['pending', 'in_progress', 'completed'] as TaskStatus[]).map((status) => (
+            <DropdownMenuItem
+              key={status}
+              onClick={() => onUpdateStatus(task.id, status)}
+              className={cn(
+                "flex items-center gap-2",
+                task.status === status && "bg-muted"
+              )}
+            >
+              <span className={STATUS_COLORS[status]}>{STATUS_ICONS[status]}</span>
+              {STATUS_LABELS[status]}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       
       <div className="flex-1 min-w-0">
         <p
           className={cn(
             "text-foreground transition-all duration-200",
-            task.completed && "line-through text-muted-foreground"
+            task.status === 'completed' && "line-through text-muted-foreground"
           )}
         >
           {task.title}
         </p>
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <Calendar className="h-3 w-3 text-muted-foreground" />
-          <span className="text-xs font-mono text-muted-foreground">
-            {format(parseISO(task.date), "dd MMM", { locale: ptBR })}
-          </span>
+        <div className="flex items-center gap-3 mt-1.5">
+          <div className="flex items-center gap-1.5">
+            <Calendar className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs font-mono text-muted-foreground">
+              {format(parseISO(task.date), "dd MMM", { locale: ptBR })}
+            </span>
+          </div>
+          {task.tag && (
+            <span className={cn(
+              "text-xs px-2 py-0.5 rounded-full font-medium",
+              TAG_COLORS[task.tag].bg,
+              TAG_COLORS[task.tag].text
+            )}>
+              {TAG_LABELS[task.tag]}
+            </span>
+          )}
         </div>
       </div>
 
