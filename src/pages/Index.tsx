@@ -1,11 +1,67 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { useTasks } from '@/hooks/useTasks';
+import { TabNavigation } from '@/components/TabNavigation';
+import { TodoView } from '@/components/TodoView';
+import { CalendarView } from '@/components/CalendarView';
+import { CheckSquare } from 'lucide-react';
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState<'todo' | 'calendar'>('todo');
+  const { tasks, addTask, toggleTask, deleteTask, getTasksByDate } = useTasks();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background">
+      {/* Subtle grid background */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-[0.02]"
+        style={{
+          backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px),
+                           linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }}
+      />
+
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        {/* Logo / Brand */}
+        <header className="flex items-center gap-3 mb-8">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 border border-primary/20">
+            <CheckSquare className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">TaskFlow</h2>
+            <p className="text-xs text-muted-foreground font-mono">Organize seu dia</p>
+          </div>
+        </header>
+
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+
+        {/* Content */}
+        <main>
+          {activeTab === 'todo' ? (
+            <TodoView
+              tasks={tasks}
+              onAdd={addTask}
+              onToggle={toggleTask}
+              onDelete={deleteTask}
+            />
+          ) : (
+            <CalendarView
+              tasks={tasks}
+              getTasksByDate={getTasksByDate}
+              onToggle={toggleTask}
+            />
+          )}
+        </main>
+
+        {/* Footer */}
+        <footer className="mt-16 pt-8 border-t border-border">
+          <p className="text-center text-xs text-muted-foreground font-mono">
+            TaskFlow • {new Date().getFullYear()}
+          </p>
+        </footer>
       </div>
     </div>
   );
