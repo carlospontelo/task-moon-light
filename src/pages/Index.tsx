@@ -1,13 +1,27 @@
 import { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
+import { useGoals } from '@/hooks/useGoals';
 import { TabNavigation } from '@/components/TabNavigation';
 import { TodoView } from '@/components/TodoView';
 import { CalendarView } from '@/components/CalendarView';
+import { GoalsView } from '@/components/goals/GoalsView';
 import { CheckSquare } from 'lucide-react';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<'todo' | 'calendar'>('todo');
+  const [activeTab, setActiveTab] = useState<'todo' | 'calendar' | 'goals'>('todo');
   const { tasks, addTask, updateTaskStatus, deleteTask, getTasksByDate } = useTasks();
+  const {
+    goals,
+    addGoal,
+    updateGoalStatus,
+    updateGoal,
+    deleteGoal,
+    linkTask,
+    unlinkTask,
+    getLinkedTasks,
+    getUnlinkedTasks,
+    getActiveGoalsCount,
+  } = useGoals(tasks);
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,18 +54,34 @@ const Index = () => {
 
         {/* Content */}
         <main>
-          {activeTab === 'todo' ? (
+          {activeTab === 'todo' && (
             <TodoView
               tasks={tasks}
               onAdd={addTask}
               onUpdateStatus={updateTaskStatus}
               onDelete={deleteTask}
             />
-          ) : (
+          )}
+          {activeTab === 'calendar' && (
             <CalendarView
               tasks={tasks}
               getTasksByDate={getTasksByDate}
               onUpdateStatus={updateTaskStatus}
+            />
+          )}
+          {activeTab === 'goals' && (
+            <GoalsView
+              goals={goals}
+              tasks={tasks}
+              addGoal={addGoal}
+              updateGoalStatus={updateGoalStatus}
+              updateGoal={updateGoal}
+              deleteGoal={deleteGoal}
+              linkTask={linkTask}
+              unlinkTask={unlinkTask}
+              getLinkedTasks={getLinkedTasks}
+              getUnlinkedTasks={getUnlinkedTasks}
+              getActiveGoalsCount={getActiveGoalsCount}
             />
           )}
         </main>
