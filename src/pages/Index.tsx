@@ -1,15 +1,26 @@
 import { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useGoals } from '@/hooks/useGoals';
+import { useExpenses } from '@/hooks/useExpenses';
 import { TabNavigation } from '@/components/TabNavigation';
 import { TodoView } from '@/components/TodoView';
 import { CalendarView } from '@/components/CalendarView';
 import { GoalsView } from '@/components/goals/GoalsView';
+import { FinancesView } from '@/components/finances/FinancesView';
 import { CheckSquare } from 'lucide-react';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<'todo' | 'calendar' | 'goals'>('todo');
+  const [activeTab, setActiveTab] = useState<'todo' | 'calendar' | 'goals' | 'finances'>('todo');
   const { tasks, addTask, updateTaskStatus, deleteTask, getTasksByDate } = useTasks();
+  const {
+    expenses,
+    addExpense,
+    updateExpense,
+    deleteExpense,
+    getExpensesByMonthAndType,
+    getCategoryBreakdown,
+    getTypeTotal,
+  } = useExpenses();
   const {
     goals,
     addGoal,
@@ -82,6 +93,17 @@ const Index = () => {
               getLinkedTasks={getLinkedTasks}
               getUnlinkedTasks={getUnlinkedTasks}
               getActiveGoalsCount={getActiveGoalsCount}
+            />
+          )}
+          {activeTab === 'finances' && (
+            <FinancesView
+              expenses={expenses}
+              addExpense={addExpense}
+              updateExpense={updateExpense}
+              deleteExpense={deleteExpense}
+              getExpensesByMonthAndType={getExpensesByMonthAndType}
+              getCategoryBreakdown={getCategoryBreakdown}
+              getTypeTotal={getTypeTotal}
             />
           )}
         </main>

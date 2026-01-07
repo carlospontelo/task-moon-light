@@ -1,0 +1,171 @@
+import { useState } from 'react';
+import { Expense, ExpenseType, getCurrentMonth, getMonthLabel } from '@/types/expense';
+import { MonthNavigator } from './MonthNavigator';
+import { MonthSummary } from './MonthSummary';
+import { ExpenseTypeGroup } from './ExpenseTypeGroup';
+import { ExpenseForm } from './ExpenseForm';
+import { ExpenseEditDialog } from './ExpenseEditDialog';
+import { ExpenseDeleteDialog } from './ExpenseDeleteDialog';
+import { Button } from '@/components/ui/button';
+import { Plus, Receipt } from 'lucide-react';
+
+interface FinancesViewProps {
+  expenses: Expense[];
+  addExpense: (data: {
+    name: string;
+    amount: number;
+    category: any;
+    type: ExpenseType;
+    installmentTotal?: number;
+  }) => void;
+  updateExpense: (
+    expenseId: string,
+    data: Partial<Pick<Expense, 'name' | 'amount' | 'category'>>,
+    scope: 'this' | 'from_this' | 'all'
+  ) => void;
+  deleteExpense: (expenseId: string, scope: 'this' | 'from_this' | 'all') => void;
+  getExpensesByMonthAndType: (month: string, type: ExpenseType) => Expense[];
+  getCategoryBreakdown: (month: string) => {
+    breakdown: Record<string, { amount: number; percentage: number }>;
+    total: number;
+  };
+  getTypeTotal: (month: string, type: ExpenseType) => number;
+}
+
+export function FinancesView({
+  addExpense,
+  updateExpense,
+  deleteExpense,
+  getExpensesByMonthAndType,
+  getCategoryBreakdown,
+  getTypeTotal,
+}: FinancesViewProps) {
+  const currentMonth = getCurrentMonth();
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+
+  const { breakdown, total } = getCategoryBreakdown(selectedMonth);
+  const isPastMonth = selectedMonth < currentMonth;
+  const isFutureMonth = selectedMonth > currentMonth;
+
+  const fixedExpenses = getExpensesByMonthAndType(selectedMonth, 'fixed');
+  const installmentExpenses = getExpensesByMonthAndType(selectedMonth, 'installment');
+  const singleExpenses = getExpensesByMonthAndType(selectedMonth, 'single');
+
+  const hasExpenses = fixedExpenses.length > 0 || installmentExpenses.length > 0 || singleExpenses.length > 0;
+
+  const handleEdit = (expense: Expense) => {
+    setEditingExpense(expense);
+  };
+
+  const handleDelete = (expense: Expense) => {
+    setDeletingExpense(expense);
+  };
+
+  const { full: monthLabel } = getMonthLabel(selectedMonth);
+
+  return (
+    <div className="space-y-6">
+      {/* Month Navigation */}
+      <div className="flex justify-center">
+        <MonthNavigator
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+        />
+      </div>
+
+      {/* Month Summary */}
+      <div className="p-6 rounded-2xl bg-secondary/30 border border-border">
+        <MonthSummary total={total} breakdown={breakdown as any} />
+      </div>
+
+      {/* Expense List */}
+      {hasExpenses ? (
+        <div className="space-y-4">
+          <ExpenseTypeGroup
+            type="fixed"
+            expenses={fixedExpenses}
+            total={getTypeTotal(selectedMonth, 'fixed')}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            isReadOnly={isPastMonth}
+          />
+          <ExpenseTypeGroup
+            type="installment"
+            expenses={installmentExpenses}
+            total={getTypeTotal(selectedMonth, 'installment')}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            isReadOnly={isPastMonth}
+          />
+          <ExpenseTypeGroup
+            type="single"
+            expenses={singleExpenses}
+            total={getTypeTotal(selectedMonth, 'single')}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            isReadOnly={isPastMonth}
+          />
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-secondary mx-auto mb-4">
+            <Receipt className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground mb-1">
+            Nenhuma despesa em
+          </p>
+          <p className="font-medium text-foreground mb-4">
+            {monthLabel}
+          </p>
+          {!isPastMonth && (
+            <Button onClick={() => setFormOpen(true)} variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar despesa
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Add Button */}
+      {hasExpenses && !isPastMonth && (
+        <div className="flex justify-center pt-4">
+          <Button onClick={() => setFormOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Adicionar despesa
+          </Button>
+        </div>
+      )}
+
+      {/* Future month notice */}
+      {isFutureMonth && hasExpenses && (
+        <p className="text-center text-xs text-muted-foreground">
+          Exibindo despesas comprometidas (fixas e parcelamentos)
+        </p>
+      )}
+
+      {/* Dialogs */}
+      <ExpenseForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        onSubmit={addExpense}
+      />
+
+      <ExpenseEditDialog
+        expense={editingExpense}
+        open={!!editingExpense}
+        onOpenChange={(open) => !open && setEditingExpense(null)}
+        onSave={updateExpense}
+      />
+
+      <ExpenseDeleteDialog
+        expense={deletingExpense}
+        open={!!deletingExpense}
+        onOpenChange={(open) => !open && setDeletingExpense(null)}
+        onConfirm={deleteExpense}
+      />
+    </div>
+  );
+}
