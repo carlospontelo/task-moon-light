@@ -1,10 +1,22 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Expense, ExpenseType, ExpenseCategory, getCurrentMonth, addMonths } from '@/types/expense';
 
-export function useExpenses() {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+const STORAGE_KEY = 'expenses-storage';
 
-  const generateId = () => Math.random().toString(36).substring(2, 9);
+export function useExpenses() {
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+  }, [expenses]);
+
+  const generateId = () => crypto.randomUUID();
 
   const addExpense = useCallback((
     data: {
