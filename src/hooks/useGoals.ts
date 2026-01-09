@@ -1,3 +1,4 @@
+// @refresh reset
 import { useState, useEffect, useCallback } from 'react';
 import { Goal, GoalStatus, GoalArea, GoalType, GoalEnergy, getCurrentQuarter, MAX_ACTIVE_GOALS } from '@/types/goal';
 import { Task } from '@/types/task';
