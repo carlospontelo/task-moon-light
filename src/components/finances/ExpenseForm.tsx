@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ExpenseType, ExpenseCategory, EXPENSE_CATEGORIES } from '@/types/expense';
+import { useState, useEffect } from 'react';
+import { ExpenseType, ExpenseCategory, EXPENSE_CATEGORIES, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
 import {
   Dialog,
   DialogContent,
@@ -23,22 +23,32 @@ import { cn } from '@/lib/utils';
 interface ExpenseFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialMonth?: string;
   onSubmit: (data: {
     name: string;
     amount: number;
     category: ExpenseCategory;
     type: ExpenseType;
     installmentTotal?: number;
+    startMonth: string;
   }) => void;
 }
 
-export function ExpenseForm({ open, onOpenChange, onSubmit }: ExpenseFormProps) {
+export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: ExpenseFormProps) {
   const [step, setStep] = useState<'type' | 'details'>('type');
   const [selectedType, setSelectedType] = useState<ExpenseType | null>(null);
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('other');
   const [installmentTotal, setInstallmentTotal] = useState('12');
+  const [startMonth, setStartMonth] = useState(initialMonth || getCurrentMonth());
+
+  // Update startMonth when initialMonth changes (when user navigates months)
+  useEffect(() => {
+    if (initialMonth) {
+      setStartMonth(initialMonth);
+    }
+  }, [initialMonth]);
 
   const resetForm = () => {
     setStep('type');
@@ -47,6 +57,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit }: ExpenseFormProps) 
     setAmount('');
     setCategory('other');
     setInstallmentTotal('12');
+    setStartMonth(initialMonth || getCurrentMonth());
   };
 
   const handleTypeSelect = (type: ExpenseType) => {
@@ -66,11 +77,16 @@ export function ExpenseForm({ open, onOpenChange, onSubmit }: ExpenseFormProps) 
       category,
       type: selectedType,
       installmentTotal: selectedType === 'installment' ? parseInt(installmentTotal) : undefined,
+      startMonth,
     });
 
     resetForm();
     onOpenChange(false);
   };
+
+  // Generate month options for the select
+  const currentMonth = getCurrentMonth();
+  const monthOptions = getMonthRange(currentMonth, 6, 12);
 
   const handleOpenChange = (open: boolean) => {
     if (!open) resetForm();
@@ -183,6 +199,31 @@ export function ExpenseForm({ open, onOpenChange, onSubmit }: ExpenseFormProps) 
                 </Select>
               </div>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="startMonth">
+                {selectedType === 'single' 
+                  ? 'Mês da despesa' 
+                  : selectedType === 'installment' 
+                    ? 'Mês da primeira parcela'
+                    : 'A partir de qual mês'}
+              </Label>
+              <Select value={startMonth} onValueChange={setStartMonth}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((month) => {
+                    const { short, year } = getMonthLabel(month);
+                    return (
+                      <SelectItem key={month} value={month}>
+                        {short} {year}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>

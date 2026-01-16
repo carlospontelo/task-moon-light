@@ -26,9 +26,10 @@ export function useExpenses() {
       category: ExpenseCategory;
       type: ExpenseType;
       installmentTotal?: number;
+      startMonth: string;
     }
   ) => {
-    const currentMonth = getCurrentMonth();
+    const startMonth = data.startMonth;
     const baseId = generateId();
 
     if (data.type === 'single') {
@@ -38,13 +39,13 @@ export function useExpenses() {
         amount: data.amount,
         category: data.category,
         type: 'single',
-        month: currentMonth,
+        month: startMonth,
         createdAt: new Date(),
       };
       setExpenses(prev => [...prev, newExpense]);
     } else if (data.type === 'fixed') {
       const fixedGroupId = generateId();
-      // Create fixed expense for current month and next 12 months
+      // Create fixed expense from start month and next 12 months
       const newExpenses: Expense[] = [];
       for (let i = 0; i <= 12; i++) {
         newExpenses.push({
@@ -54,7 +55,7 @@ export function useExpenses() {
           category: data.category,
           type: 'fixed',
           fixedGroupId,
-          month: addMonths(currentMonth, i),
+          month: addMonths(startMonth, i),
           createdAt: new Date(),
         });
       }
@@ -72,7 +73,7 @@ export function useExpenses() {
           installmentCurrent: i + 1,
           installmentTotal: data.installmentTotal,
           installmentGroupId,
-          month: addMonths(currentMonth, i),
+          month: addMonths(startMonth, i),
           createdAt: new Date(),
         });
       }
