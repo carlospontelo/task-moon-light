@@ -7,6 +7,7 @@ export type ExpenseCategory =
   | 'work'         // 💼 Trabalho
   | 'education'    // 📚 Educação
   | 'shopping'     // 🛒 Compras
+  | 'investments'  // 📈 Investimentos
   | 'other';       // 📦 Outros
 
 export type ExpenseType = 'fixed' | 'installment' | 'single';
@@ -30,6 +31,20 @@ export interface Expense {
   createdAt: Date;
 }
 
+// Cores fixas por categoria - garantem consistência visual em todos os meses
+export const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+  housing: 'bg-blue-500',
+  food: 'bg-orange-500',
+  transport: 'bg-cyan-500',
+  leisure: 'bg-pink-500',
+  health: 'bg-red-500',
+  work: 'bg-slate-500',
+  education: 'bg-purple-500',
+  shopping: 'bg-amber-500',
+  investments: 'bg-emerald-500',
+  other: 'bg-gray-500',
+};
+
 export const EXPENSE_CATEGORIES: Record<ExpenseCategory, { label: string; icon: string }> = {
   housing: { label: 'Moradia', icon: '🏠' },
   food: { label: 'Alimentação', icon: '🍔' },
@@ -39,6 +54,7 @@ export const EXPENSE_CATEGORIES: Record<ExpenseCategory, { label: string; icon: 
   work: { label: 'Trabalho', icon: '💼' },
   education: { label: 'Educação', icon: '📚' },
   shopping: { label: 'Compras', icon: '🛒' },
+  investments: { label: 'Investimentos', icon: '📈' },
   other: { label: 'Outros', icon: '📦' },
 };
 
