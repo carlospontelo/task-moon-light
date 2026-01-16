@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Expense, ExpenseCategory, EXPENSE_CATEGORIES } from '@/types/expense';
 import {
   Dialog,
@@ -32,17 +32,20 @@ interface ExpenseEditDialogProps {
 }
 
 export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: ExpenseEditDialogProps) {
-  const [name, setName] = useState(expense?.name || '');
-  const [amount, setAmount] = useState(expense ? (expense.amount / 100).toFixed(2).replace('.', ',') : '');
-  const [category, setCategory] = useState<ExpenseCategory>(expense?.category || 'other');
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>('other');
   const [scope, setScope] = useState<'this' | 'from_this' | 'all'>('from_this');
 
-  // Update form when expense changes
-  if (expense && name !== expense.name && !open) {
-    setName(expense.name);
-    setAmount((expense.amount / 100).toFixed(2).replace('.', ','));
-    setCategory(expense.category);
-  }
+  // Inicializa o formulário com os dados da despesa quando o dialog abre
+  useEffect(() => {
+    if (expense && open) {
+      setName(expense.name);
+      setAmount((expense.amount / 100).toFixed(2).replace('.', ','));
+      setCategory(expense.category);
+      setScope('from_this');
+    }
+  }, [expense, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
