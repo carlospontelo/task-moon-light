@@ -17,6 +17,7 @@ interface FinancesViewProps {
     category: any;
     type: ExpenseType;
     installmentTotal?: number;
+    startMonth: string;
   }) => void;
   updateExpense: (
     expenseId: string,
@@ -151,6 +152,7 @@ export function FinancesView({
         open={formOpen}
         onOpenChange={setFormOpen}
         onSubmit={addExpense}
+        initialMonth={selectedMonth}
       />
 
       <ExpenseEditDialog
