@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ExpenseType, ExpenseCategory, EXPENSE_CATEGORIES, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
+import { ExpenseType, ExpenseCategory, PaymentMethod, EXPENSE_CATEGORIES, PAYMENT_METHODS, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,7 @@ interface ExpenseFormProps {
     type: ExpenseType;
     installmentTotal?: number;
     startMonth: string;
+    paymentMethod?: PaymentMethod;
   }) => void;
 }
 
@@ -42,6 +43,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
   const [category, setCategory] = useState<ExpenseCategory>('other');
   const [installmentTotal, setInstallmentTotal] = useState('12');
   const [startMonth, setStartMonth] = useState(initialMonth || getCurrentMonth());
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
 
   // Update startMonth when initialMonth changes (when user navigates months)
   useEffect(() => {
@@ -58,6 +60,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
     setCategory('other');
     setInstallmentTotal('12');
     setStartMonth(initialMonth || getCurrentMonth());
+    setPaymentMethod('');
   };
 
   const handleTypeSelect = (type: ExpenseType) => {
@@ -78,6 +81,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
       type: selectedType,
       installmentTotal: selectedType === 'installment' ? parseInt(installmentTotal) : undefined,
       startMonth,
+      paymentMethod: paymentMethod || undefined,
     });
 
     resetForm();
@@ -233,6 +237,22 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(EXPENSE_CATEGORIES).map(([key, { label, icon }]) => (
+                    <SelectItem key={key} value={key}>
+                      {icon} {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+            </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">Forma de pagamento</Label>
+              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod | '')}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PAYMENT_METHODS).map(([key, { label, icon }]) => (
                     <SelectItem key={key} value={key}>
                       {icon} {label}
                     </SelectItem>

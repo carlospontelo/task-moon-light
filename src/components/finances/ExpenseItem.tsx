@@ -1,4 +1,4 @@
-import { Expense, EXPENSE_CATEGORIES, formatCurrency } from '@/types/expense';
+import { Expense, EXPENSE_CATEGORIES, PAYMENT_METHODS, PaymentMethod, formatCurrency } from '@/types/expense';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -31,7 +31,14 @@ export function ExpenseItem({ expense, onEdit, onDelete, isReadOnly }: ExpenseIt
               </span>
             )}
           </p>
-          <p className="text-xs text-muted-foreground">{category.label}</p>
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <span>{category.label}</span>
+            {expense.paymentMethod && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-secondary text-[10px] font-medium">
+                {PAYMENT_METHODS[expense.paymentMethod].icon} {PAYMENT_METHODS[expense.paymentMethod].label}
+              </span>
+            )}
+          </p>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 // @refresh reset
 import { useState, useCallback, useEffect } from 'react';
-import { Expense, ExpenseType, ExpenseCategory, getCurrentMonth, addMonths } from '@/types/expense';
+import { Expense, ExpenseType, ExpenseCategory, PaymentMethod, getCurrentMonth, addMonths } from '@/types/expense';
 
 const STORAGE_KEY = 'expenses-storage';
 
@@ -27,6 +27,7 @@ export function useExpenses() {
       type: ExpenseType;
       installmentTotal?: number;
       startMonth: string;
+      paymentMethod?: PaymentMethod;
     }
   ) => {
     const startMonth = data.startMonth;
@@ -40,6 +41,7 @@ export function useExpenses() {
         category: data.category,
         type: 'single',
         month: startMonth,
+        paymentMethod: data.paymentMethod,
         createdAt: new Date(),
       };
       setExpenses(prev => [...prev, newExpense]);
@@ -56,6 +58,7 @@ export function useExpenses() {
           type: 'fixed',
           fixedGroupId,
           month: addMonths(startMonth, i),
+          paymentMethod: data.paymentMethod,
           createdAt: new Date(),
         });
       }
@@ -74,6 +77,7 @@ export function useExpenses() {
           installmentTotal: data.installmentTotal,
           installmentGroupId,
           month: addMonths(startMonth, i),
+          paymentMethod: data.paymentMethod,
           createdAt: new Date(),
         });
       }
@@ -83,7 +87,7 @@ export function useExpenses() {
 
   const updateExpense = useCallback((
     expenseId: string,
-    data: Partial<Pick<Expense, 'name' | 'amount' | 'category'>>,
+    data: Partial<Pick<Expense, 'name' | 'amount' | 'category' | 'paymentMethod'>>,
     scope: 'this' | 'from_this' | 'all' = 'this'
   ) => {
     setExpenses(prev => {
