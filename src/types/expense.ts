@@ -12,6 +12,15 @@ export type ExpenseCategory =
 
 export type ExpenseType = 'fixed' | 'installment' | 'single';
 
+export type PaymentMethod = 'credit' | 'debit' | 'pix' | 'cash_reserve';
+
+export const PAYMENT_METHODS: Record<PaymentMethod, { label: string; icon: string }> = {
+  credit: { label: 'Crédito', icon: '💳' },
+  debit: { label: 'Débito', icon: '🏧' },
+  pix: { label: 'Pix', icon: '⚡' },
+  cash_reserve: { label: 'Caixinha', icon: '🐷' },
+};
+
 export interface Expense {
   id: string;
   name: string;
@@ -28,6 +37,7 @@ export interface Expense {
   fixedGroupId?: string;
   
   month: string; // "2024-12"
+  paymentMethod?: PaymentMethod;
   createdAt: Date;
 }
 

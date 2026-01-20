@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Expense, ExpenseCategory, EXPENSE_CATEGORIES } from '@/types/expense';
+import { Expense, ExpenseCategory, PaymentMethod, EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expense';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ interface ExpenseEditDialogProps {
   onOpenChange: (open: boolean) => void;
   onSave: (
     expenseId: string,
-    data: Partial<Pick<Expense, 'name' | 'amount' | 'category'>>,
+    data: Partial<Pick<Expense, 'name' | 'amount' | 'category' | 'paymentMethod'>>,
     scope: 'this' | 'from_this' | 'all'
   ) => void;
 }
@@ -35,6 +35,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('other');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
   const [scope, setScope] = useState<'this' | 'from_this' | 'all'>('from_this');
 
   // Inicializa o formulário com os dados da despesa quando o dialog abre
@@ -43,6 +44,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
       setName(expense.name);
       setAmount((expense.amount / 100).toFixed(2).replace('.', ','));
       setCategory(expense.category);
+      setPaymentMethod(expense.paymentMethod || '');
       setScope('from_this');
     }
   }, [expense, open]);
@@ -53,7 +55,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
 
     const amountInCents = Math.round(parseFloat(amount.replace(',', '.')) * 100);
 
-    onSave(expense.id, { name, amount: amountInCents, category }, scope);
+    onSave(expense.id, { name, amount: amountInCents, category, paymentMethod: paymentMethod || undefined }, scope);
     onOpenChange(false);
   };
 
@@ -104,6 +106,22 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(EXPENSE_CATEGORIES).map(([key, { label, icon }]) => (
+                  <SelectItem key={key} value={key}>
+                    {icon} {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-paymentMethod">Forma de pagamento</Label>
+            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod | '')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(PAYMENT_METHODS).map(([key, { label, icon }]) => (
                   <SelectItem key={key} value={key}>
                     {icon} {label}
                   </SelectItem>
