@@ -1,4 +1,4 @@
-// @refresh reset
+/* @refresh reset */
 import { useState, useEffect, useCallback } from 'react';
 import { Task, TaskStatus, TaskTag } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
