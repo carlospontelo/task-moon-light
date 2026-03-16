@@ -1,3 +1,4 @@
+// @refresh reset
 import { useState, useEffect, useCallback } from 'react';
 import { Goal, GoalStatus, GoalArea, GoalType, GoalEnergy, MAX_ACTIVE_GOALS } from '@/types/goal';
 import { Task } from '@/types/task';
@@ -8,6 +9,22 @@ export function useGoals(tasks: Task[]) {
   const { user } = useAuth();
   const [goals, setGoals] = useState<Goal[]>([]);
 
+  const mapRow = (g: any): Goal => ({
+    id: g.id,
+    title: g.title,
+    description: g.description || undefined,
+    quarter: g.quarter,
+    status: g.status as GoalStatus,
+    area: g.area as GoalArea,
+    type: g.type as GoalType,
+    energy: g.energy as GoalEnergy,
+    linkedTaskIds: (g.linked_task_ids || []) as string[],
+    progress: g.progress || 0,
+    abandonReason: g.abandon_reason || undefined,
+    createdAt: g.created_at,
+    updatedAt: g.updated_at,
+  });
+
   const fetchGoals = useCallback(async () => {
     if (!user) { setGoals([]); return; }
     const { data, error } = await supabase
@@ -16,26 +33,31 @@ export function useGoals(tasks: Task[]) {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setGoals(data.map((g) => ({
-        id: g.id,
-        title: g.title,
-        description: g.description || undefined,
-        quarter: g.quarter,
-        status: g.status as GoalStatus,
-        area: g.area as GoalArea,
-        type: g.type as GoalType,
-        energy: g.energy as GoalEnergy,
-        linkedTaskIds: (g.linked_task_ids || []) as string[],
-        progress: g.progress || 0,
-        abandonReason: g.abandon_reason || undefined,
-        createdAt: g.created_at,
-        updatedAt: g.updated_at,
-      })));
-    }
+    if (!error && data) setGoals(data.map(mapRow));
   }, [user]);
 
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('goals-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setGoals((prev) => {
+            if (prev.some((g) => g.id === (payload.new as any).id)) return prev;
+            return [mapRow(payload.new), ...prev];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setGoals((prev) => prev.map((g) => g.id === (payload.new as any).id ? mapRow(payload.new) : g));
+        } else if (payload.eventType === 'DELETE') {
+          setGoals((prev) => prev.filter((g) => g.id !== (payload.old as any).id));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   const calculateProgress = useCallback((linkedTaskIds: string[]): number => {
     if (linkedTaskIds.length === 0) return 0;
@@ -44,7 +66,6 @@ export function useGoals(tasks: Task[]) {
     return Math.round((linked.filter((t) => t.status === 'completed').length / linked.length) * 100);
   }, [tasks]);
 
-  // Update progress when tasks change
   useEffect(() => {
     setGoals((prev) => prev.map((g) => ({ ...g, progress: calculateProgress(g.linkedTaskIds) })));
   }, [tasks, calculateProgress]);
@@ -56,21 +77,11 @@ export function useGoals(tasks: Task[]) {
     const activeCount = goals.filter((g) => g.quarter === quarter && g.status === 'active').length;
     if (activeCount >= MAX_ACTIVE_GOALS) return false;
 
-    const { data, error } = await supabase.from('goals').insert({
+    const { error } = await supabase.from('goals').insert({
       user_id: user.id, title, description: description || null, quarter, status: 'active',
       area, type, energy, linked_task_ids: [], progress: 0,
-    }).select().single();
-
-    if (!error && data) {
-      setGoals((prev) => [{
-        id: data.id, title: data.title, description: data.description || undefined,
-        quarter: data.quarter, status: data.status as GoalStatus, area: data.area as GoalArea,
-        type: data.type as GoalType, energy: data.energy as GoalEnergy,
-        linkedTaskIds: [], progress: 0, createdAt: data.created_at, updatedAt: data.updated_at,
-      }, ...prev]);
-      return true;
-    }
-    return false;
+    });
+    return !error;
   };
 
   const updateGoalStatus = async (id: string, status: GoalStatus, abandonReason?: string) => {
@@ -78,14 +89,12 @@ export function useGoals(tasks: Task[]) {
     if (status === 'abandoned') updates.abandon_reason = abandonReason;
     else updates.abandon_reason = null;
     await supabase.from('goals').update(updates).eq('id', id);
-    setGoals((prev) => prev.map((g) => g.id === id ? { ...g, status, abandonReason: updates.abandon_reason || undefined } : g));
   };
 
   const updateGoal = async (
     id: string, updates: Partial<Pick<Goal, 'title' | 'description' | 'area' | 'type' | 'energy' | 'quarter'>>
   ) => {
     await supabase.from('goals').update(updates).eq('id', id);
-    setGoals((prev) => prev.map((g) => g.id === id ? { ...g, ...updates, updatedAt: new Date().toISOString() } : g));
   };
 
   const linkTask = async (goalId: string, taskId: string) => {
@@ -93,7 +102,6 @@ export function useGoals(tasks: Task[]) {
     if (!goal || goal.linkedTaskIds.includes(taskId)) return;
     const newIds = [...goal.linkedTaskIds, taskId];
     await supabase.from('goals').update({ linked_task_ids: newIds }).eq('id', goalId);
-    setGoals((prev) => prev.map((g) => g.id === goalId ? { ...g, linkedTaskIds: newIds } : g));
   };
 
   const unlinkTask = async (goalId: string, taskId: string) => {
@@ -101,12 +109,10 @@ export function useGoals(tasks: Task[]) {
     if (!goal) return;
     const newIds = goal.linkedTaskIds.filter((id) => id !== taskId);
     await supabase.from('goals').update({ linked_task_ids: newIds }).eq('id', goalId);
-    setGoals((prev) => prev.map((g) => g.id === goalId ? { ...g, linkedTaskIds: newIds } : g));
   };
 
   const deleteGoal = async (id: string) => {
     await supabase.from('goals').delete().eq('id', id);
-    setGoals((prev) => prev.filter((g) => g.id !== id));
   };
 
   const getActiveGoalsCount = (quarter: string) => goals.filter((g) => g.quarter === quarter && g.status === 'active').length;

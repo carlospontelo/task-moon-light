@@ -1,89 +1,138 @@
-import { useState, useCallback, useEffect } from 'react';
+// @refresh reset
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Expense, ExpenseType, ExpenseCategory, PaymentMethod, addMonths } from '@/types/expense';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+/**
+ * Installments are stored as a SINGLE master record (installment_current=1).
+ * Virtual installment entries for months 2..N are generated dynamically in the frontend.
+ */
+
+interface MasterExpense extends Expense {
+  isVirtual?: boolean;
+  masterExpenseId?: string;
+}
+
 export function useExpenses() {
   const { user } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [rawExpenses, setRawExpenses] = useState<Expense[]>([]);
+
+  const mapRow = (e: any): Expense => ({
+    id: e.id,
+    name: e.name,
+    amount: e.amount,
+    category: e.category as ExpenseCategory,
+    type: e.type as ExpenseType,
+    installmentCurrent: e.installment_current || undefined,
+    installmentTotal: e.installment_total || undefined,
+    installmentGroupId: e.installment_group_id || undefined,
+    fixedGroupId: e.fixed_group_id || undefined,
+    month: e.month,
+    paymentMethod: (e.payment_method as PaymentMethod) || undefined,
+    createdAt: new Date(e.created_at),
+  });
 
   const fetchExpenses = useCallback(async () => {
-    if (!user) { setExpenses([]); return; }
+    if (!user) { setRawExpenses([]); return; }
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
-      setExpenses(data.map((e) => ({
-        id: e.id,
-        name: e.name,
-        amount: e.amount,
-        category: e.category as ExpenseCategory,
-        type: e.type as ExpenseType,
-        installmentCurrent: e.installment_current || undefined,
-        installmentTotal: e.installment_total || undefined,
-        installmentGroupId: e.installment_group_id || undefined,
-        fixedGroupId: e.fixed_group_id || undefined,
-        month: e.month,
-        paymentMethod: (e.payment_method as PaymentMethod) || undefined,
-        createdAt: new Date(e.created_at),
-      })));
-    }
+    if (!error && data) setRawExpenses(data.map(mapRow));
   }, [user]);
 
   useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
 
-  const generateId = () => crypto.randomUUID();
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('expenses-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setRawExpenses((prev) => {
+            if (prev.some((e) => e.id === (payload.new as any).id)) return prev;
+            return [mapRow(payload.new), ...prev];
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          setRawExpenses((prev) => prev.map((e) => e.id === (payload.new as any).id ? mapRow(payload.new) : e));
+        } else if (payload.eventType === 'DELETE') {
+          setRawExpenses((prev) => prev.filter((e) => e.id !== (payload.old as any).id));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  // Generate virtual installment entries from master records
+  const expenses: MasterExpense[] = useMemo(() => {
+    const result: MasterExpense[] = [];
+
+    for (const exp of rawExpenses) {
+      if (exp.type === 'installment' && exp.installmentTotal && exp.installmentTotal > 1) {
+        // Generate virtual entries for each installment month
+        for (let i = 0; i < exp.installmentTotal; i++) {
+          result.push({
+            ...exp,
+            id: i === 0 ? exp.id : `${exp.id}_virtual_${i + 1}`,
+            month: addMonths(exp.month, i),
+            installmentCurrent: i + 1,
+            isVirtual: i > 0,
+            masterExpenseId: exp.id,
+          });
+        }
+      } else {
+        result.push(exp);
+      }
+    }
+
+    return result;
+  }, [rawExpenses]);
 
   const addExpense = useCallback(async (data: {
     name: string; amount: number; category: ExpenseCategory; type: ExpenseType;
     installmentTotal?: number; startMonth: string; paymentMethod?: PaymentMethod;
   }) => {
     if (!user) return;
-    const startMonth = data.startMonth;
 
     if (data.type === 'single') {
-      const { data: row, error } = await supabase.from('expenses').insert({
+      await supabase.from('expenses').insert({
         user_id: user.id, name: data.name, amount: data.amount, category: data.category,
-        type: 'single', month: startMonth, payment_method: data.paymentMethod || null,
-      }).select().single();
-      if (!error && row) await fetchExpenses();
+        type: 'single', month: data.startMonth, payment_method: data.paymentMethod || null,
+      });
     } else if (data.type === 'fixed') {
-      const fixedGroupId = generateId();
+      const fixedGroupId = crypto.randomUUID();
       const rows = [];
       for (let i = 0; i <= 12; i++) {
         rows.push({
           user_id: user.id, name: data.name, amount: data.amount, category: data.category,
-          type: 'fixed', fixed_group_id: fixedGroupId, month: addMonths(startMonth, i),
+          type: 'fixed', fixed_group_id: fixedGroupId, month: addMonths(data.startMonth, i),
           payment_method: data.paymentMethod || null,
         });
       }
       await supabase.from('expenses').insert(rows);
-      await fetchExpenses();
     } else if (data.type === 'installment' && data.installmentTotal) {
-      const installmentGroupId = generateId();
-      const rows = [];
-      for (let i = 0; i < data.installmentTotal; i++) {
-        rows.push({
-          user_id: user.id, name: data.name, amount: data.amount, category: data.category,
-          type: 'installment', installment_current: i + 1, installment_total: data.installmentTotal,
-          installment_group_id: installmentGroupId, month: addMonths(startMonth, i),
-          payment_method: data.paymentMethod || null,
-        });
-      }
-      await supabase.from('expenses').insert(rows);
-      await fetchExpenses();
+      // Single master record — virtual entries generated in frontend
+      await supabase.from('expenses').insert({
+        user_id: user.id, name: data.name, amount: data.amount, category: data.category,
+        type: 'installment', installment_current: 1, installment_total: data.installmentTotal,
+        installment_group_id: crypto.randomUUID(), month: data.startMonth,
+        payment_method: data.paymentMethod || null,
+      });
     }
-  }, [user, fetchExpenses]);
+  }, [user]);
 
   const updateExpense = useCallback(async (
     expenseId: string,
     data: Partial<Pick<Expense, 'name' | 'amount' | 'category' | 'paymentMethod'>>,
     scope: 'this' | 'from_this' | 'all' = 'this'
   ) => {
-    const expense = expenses.find((e) => e.id === expenseId);
+    // For virtual installment entries, find the master record
+    const realId = expenseId.includes('_virtual_') ? expenseId.split('_virtual_')[0] : expenseId;
+    const expense = rawExpenses.find((e) => e.id === realId) || expenses.find((e) => e.id === expenseId);
     if (!expense) return;
 
     const dbData: any = {};
@@ -92,7 +141,10 @@ export function useExpenses() {
     if (data.category !== undefined) dbData.category = data.category;
     if (data.paymentMethod !== undefined) dbData.payment_method = data.paymentMethod || null;
 
-    if (expense.type === 'single' || scope === 'this') {
+    if (expense.type === 'installment') {
+      // Installments: always update the single master record
+      await supabase.from('expenses').update(dbData).eq('id', realId);
+    } else if (expense.type === 'single' || scope === 'this') {
       await supabase.from('expenses').update(dbData).eq('id', expenseId);
     } else if (expense.type === 'fixed' && expense.fixedGroupId) {
       if (scope === 'all') {
@@ -101,20 +153,20 @@ export function useExpenses() {
         await supabase.from('expenses').update(dbData)
           .eq('fixed_group_id', expense.fixedGroupId).gte('month', expense.month);
       }
-    } else if (expense.type === 'installment' && expense.installmentGroupId) {
-      await supabase.from('expenses').update(dbData)
-        .eq('installment_group_id', expense.installmentGroupId).gte('month', expense.month);
     }
-    await fetchExpenses();
-  }, [expenses, fetchExpenses]);
+  }, [rawExpenses, expenses]);
 
   const deleteExpense = useCallback(async (
     expenseId: string, scope: 'this' | 'from_this' | 'all' = 'this'
   ) => {
-    const expense = expenses.find((e) => e.id === expenseId);
+    const realId = expenseId.includes('_virtual_') ? expenseId.split('_virtual_')[0] : expenseId;
+    const expense = rawExpenses.find((e) => e.id === realId) || expenses.find((e) => e.id === expenseId);
     if (!expense) return;
 
-    if (expense.type === 'single' || scope === 'this') {
+    if (expense.type === 'installment') {
+      // Delete the master record removes all virtual installments
+      await supabase.from('expenses').delete().eq('id', realId);
+    } else if (expense.type === 'single' || scope === 'this') {
       await supabase.from('expenses').delete().eq('id', expenseId);
     } else if (expense.type === 'fixed' && expense.fixedGroupId) {
       if (scope === 'all') {
@@ -123,12 +175,8 @@ export function useExpenses() {
         await supabase.from('expenses').delete()
           .eq('fixed_group_id', expense.fixedGroupId).gte('month', expense.month);
       }
-    } else if (expense.type === 'installment' && expense.installmentGroupId) {
-      await supabase.from('expenses').delete()
-        .eq('installment_group_id', expense.installmentGroupId).gte('month', expense.month);
     }
-    await fetchExpenses();
-  }, [expenses, fetchExpenses]);
+  }, [rawExpenses, expenses]);
 
   const getExpensesByMonthAndType = useCallback((month: string, type: ExpenseType) => {
     return expenses.filter((e) => e.month === month && e.type === type);
