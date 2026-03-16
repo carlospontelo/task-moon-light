@@ -67,7 +67,7 @@ export function GoalForm({
   const isEditing = !!editingGoal;
   const canAddMore = activeGoalsCount < MAX_ACTIVE_GOALS;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title.trim()) {
