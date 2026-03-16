@@ -86,7 +86,7 @@ export function GoalForm({
       onOpenChange(false);
       resetForm();
     } else {
-      const success = onSubmit(
+      const result = onSubmit(
         title.trim(),
         area,
         type,
@@ -95,6 +95,7 @@ export function GoalForm({
         description.trim() || undefined
       );
       
+      const success = result instanceof Promise ? await result : result;
       if (success) {
         onOpenChange(false);
         resetForm();
