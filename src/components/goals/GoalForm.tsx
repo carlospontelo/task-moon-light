@@ -41,7 +41,7 @@ interface GoalFormProps {
     energy: GoalEnergy,
     quarter: string,
     description?: string
-  ) => boolean;
+  ) => boolean | Promise<boolean>;
   currentQuarter: string;
   activeGoalsCount: number;
   editingGoal?: Goal;
