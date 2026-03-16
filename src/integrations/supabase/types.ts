@@ -14,7 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          fixed_group_id: string | null
+          id: string
+          installment_current: number | null
+          installment_group_id: string | null
+          installment_total: number | null
+          month: string
+          name: string
+          payment_method: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          fixed_group_id?: string | null
+          id?: string
+          installment_current?: number | null
+          installment_group_id?: string | null
+          installment_total?: number | null
+          month: string
+          name: string
+          payment_method?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          fixed_group_id?: string | null
+          id?: string
+          installment_current?: number | null
+          installment_group_id?: string | null
+          installment_total?: number | null
+          month?: string
+          name?: string
+          payment_method?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          abandon_reason: string | null
+          area: string
+          created_at: string
+          description: string | null
+          energy: string
+          id: string
+          linked_task_ids: string[] | null
+          progress: number | null
+          quarter: string
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          abandon_reason?: string | null
+          area: string
+          created_at?: string
+          description?: string | null
+          energy: string
+          id?: string
+          linked_task_ids?: string[] | null
+          progress?: number | null
+          quarter: string
+          status?: string
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          abandon_reason?: string | null
+          area?: string
+          created_at?: string
+          description?: string | null
+          energy?: string
+          id?: string
+          linked_task_ids?: string[] | null
+          progress?: number | null
+          quarter?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          status: string
+          tag: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          status?: string
+          tag?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          status?: string
+          tag?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
