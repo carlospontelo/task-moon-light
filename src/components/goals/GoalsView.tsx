@@ -29,7 +29,7 @@ interface GoalsViewProps {
     energy: any,
     quarter: string,
     description?: string
-  ) => boolean;
+  ) => boolean | Promise<boolean>;
   updateGoalStatus: (id: string, status: GoalStatus, reason?: string) => void;
   updateGoal: (id: string, updates: any) => void;
   deleteGoal: (id: string) => void;

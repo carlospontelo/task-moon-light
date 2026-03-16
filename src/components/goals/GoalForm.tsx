@@ -41,7 +41,7 @@ interface GoalFormProps {
     energy: GoalEnergy,
     quarter: string,
     description?: string
-  ) => boolean;
+  ) => boolean | Promise<boolean>;
   currentQuarter: string;
   activeGoalsCount: number;
   editingGoal?: Goal;
@@ -67,7 +67,7 @@ export function GoalForm({
   const isEditing = !!editingGoal;
   const canAddMore = activeGoalsCount < MAX_ACTIVE_GOALS;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title.trim()) {
@@ -86,7 +86,7 @@ export function GoalForm({
       onOpenChange(false);
       resetForm();
     } else {
-      const success = onSubmit(
+      const result = onSubmit(
         title.trim(),
         area,
         type,
@@ -95,6 +95,7 @@ export function GoalForm({
         description.trim() || undefined
       );
       
+      const success = result instanceof Promise ? await result : result;
       if (success) {
         onOpenChange(false);
         resetForm();
