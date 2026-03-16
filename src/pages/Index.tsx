@@ -8,6 +8,7 @@ import { CalendarView } from '@/components/CalendarView';
 import { GoalsView } from '@/components/goals/GoalsView';
 import { FinancesView } from '@/components/finances/FinancesView';
 import { CheckSquare } from 'lucide-react';
+import { DataBackupExport } from '@/components/DataBackupExport';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'todo' | 'calendar' | 'goals' | 'finances'>('todo');
