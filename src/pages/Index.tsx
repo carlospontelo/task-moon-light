@@ -8,6 +8,7 @@ import { CalendarView } from '@/components/CalendarView';
 import { GoalsView } from '@/components/goals/GoalsView';
 import { FinancesView } from '@/components/finances/FinancesView';
 import { CheckSquare } from 'lucide-react';
+import { DataBackupExport } from '@/components/DataBackupExport';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<'todo' | 'calendar' | 'goals' | 'finances'>('todo');
@@ -48,14 +49,17 @@ const Index = () => {
 
       <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Logo / Brand */}
-        <header className="flex items-center gap-3 mb-8">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 border border-primary/20">
-            <CheckSquare className="h-5 w-5 text-primary" />
+        <header className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 border border-primary/20">
+              <CheckSquare className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">TaskFlow</h2>
+              <p className="text-xs text-muted-foreground font-mono">Organize seu dia</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">TaskFlow</h2>
-            <p className="text-xs text-muted-foreground font-mono">Organize seu dia</p>
-          </div>
+          <DataBackupExport />
         </header>
 
         {/* Tab Navigation */}
