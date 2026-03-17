@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Expense, ExpenseCategory, PaymentMethod, EXPENSE_CATEGORIES, PAYMENT_METHODS } from '@/types/expense';
+import { Expense, ExpenseCategory, PaymentMethod } from '@/types/expense';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   Dialog,
   DialogContent,
@@ -32,13 +33,13 @@ interface ExpenseEditDialogProps {
 }
 
 export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: ExpenseEditDialogProps) {
+  const { categories, paymentMethods } = useSettings();
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('other');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
+  const [category, setCategory] = useState<string>('other');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [scope, setScope] = useState<'this' | 'from_this' | 'all'>('from_this');
 
-  // Inicializa o formulário com os dados da despesa quando o dialog abre
   useEffect(() => {
     if (expense && open) {
       setName(expense.name);
@@ -52,10 +53,12 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!expense) return;
-
     const amountInCents = Math.round(parseFloat(amount.replace(',', '.')) * 100);
-
-    onSave(expense.id, { name, amount: amountInCents, category, paymentMethod: paymentMethod || undefined }, scope);
+    onSave(
+      expense.id,
+      { name, amount: amountInCents, category: category as ExpenseCategory, paymentMethod: (paymentMethod || undefined) as PaymentMethod | undefined },
+      scope
+    );
     onOpenChange(false);
   };
 
@@ -66,49 +69,30 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar Despesa</DialogTitle>
-          <DialogDescription>
-            Atualize os detalhes da despesa
-          </DialogDescription>
+          <DialogDescription>Atualize os detalhes da despesa</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="edit-name">Nome</Label>
-            <Input
-              id="edit-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+            <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-amount">Valor</Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                R$
-              </span>
-              <Input
-                id="edit-amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="pl-10"
-                required
-              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+              <Input id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="pl-10" required />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-category">Categoria</Label>
-            <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(EXPENSE_CATEGORIES).map(([key, { label, icon }]) => (
-                  <SelectItem key={key} value={key}>
-                    {icon} {label}
-                  </SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.key} value={cat.key}>{cat.icon} {cat.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -116,15 +100,11 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
 
           <div className="space-y-2">
             <Label htmlFor="edit-paymentMethod">Forma de pagamento</Label>
-            <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod | '')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione (opcional)" />
-              </SelectTrigger>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger>
               <SelectContent>
-                {Object.entries(PAYMENT_METHODS).map(([key, { label, icon }]) => (
-                  <SelectItem key={key} value={key}>
-                    {icon} {label}
-                  </SelectItem>
+                {paymentMethods.map((pm) => (
+                  <SelectItem key={pm.key} value={pm.key}>{pm.icon} {pm.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -138,24 +118,18 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
                   <>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="from_this" id="from_this" />
-                      <Label htmlFor="from_this" className="font-normal cursor-pointer">
-                        A partir deste mês
-                      </Label>
+                      <Label htmlFor="from_this" className="font-normal cursor-pointer">A partir deste mês</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="all" id="all" />
-                      <Label htmlFor="all" className="font-normal cursor-pointer">
-                        Todos os meses
-                      </Label>
+                      <Label htmlFor="all" className="font-normal cursor-pointer">Todos os meses</Label>
                     </div>
                   </>
                 )}
                 {expense?.type === 'installment' && (
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="from_this" id="from_this" />
-                    <Label htmlFor="from_this" className="font-normal cursor-pointer">
-                      Esta e próximas parcelas
-                    </Label>
+                    <Label htmlFor="from_this" className="font-normal cursor-pointer">Esta e próximas parcelas</Label>
                   </div>
                 )}
               </RadioGroup>
@@ -163,9 +137,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
           )}
 
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit">Salvar</Button>
           </DialogFooter>
         </form>

@@ -5,19 +5,18 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/contexts/AuthContext';
 import { TabNavigation } from '@/components/TabNavigation';
 import { TodoView } from '@/components/TodoView';
-import { CalendarView } from '@/components/CalendarView';
 import { GoalsView } from '@/components/goals/GoalsView';
 import { FinancesView } from '@/components/finances/FinancesView';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { MigrationScreen, hasLocalData, isMigrationDone } from '@/components/auth/MigrationScreen';
+import { SettingsDialog, SettingsButton } from '@/components/settings/SettingsDialog';
 import { CheckSquare, Loader2 } from 'lucide-react';
-import { DataBackupExport } from '@/components/DataBackupExport';
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const [showMigration, setShowMigration] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
-  const { tasks, addTask, updateTaskStatus, deleteTask, getTasksByDate } = useTasks();
+  const { tasks, addTask, updateTaskStatus, deleteTask } = useTasks();
   const {
     expenses, addExpense, updateExpense, deleteExpense,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
@@ -27,9 +26,9 @@ const Index = () => {
     linkTask, unlinkTask, getLinkedTasks, getUnlinkedTasks, getActiveGoalsCount,
   } = useGoals(tasks);
 
-  const [activeTab, setActiveTab] = useState<'todo' | 'calendar' | 'goals' | 'finances'>('todo');
+  const [activeTab, setActiveTab] = useState<'todo' | 'goals' | 'finances'>('todo');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Loading state
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -38,7 +37,6 @@ const Index = () => {
     );
   }
 
-  // Not authenticated
   if (!user) {
     const localDataExists = hasLocalData();
     return (
@@ -53,7 +51,6 @@ const Index = () => {
     );
   }
 
-  // Migration screen
   if (showMigration && !migrationDone) {
     return (
       <MigrationScreen
@@ -66,7 +63,6 @@ const Index = () => {
     );
   }
 
-  // Check if new user with local data that hasn't been migrated
   if (hasLocalData() && !isMigrationDone(user.id) && !migrationDone) {
     return (
       <MigrationScreen
@@ -100,7 +96,7 @@ const Index = () => {
               <p className="text-xs text-muted-foreground font-mono">Organize seu dia</p>
             </div>
           </div>
-          <DataBackupExport />
+          <SettingsButton onClick={() => setSettingsOpen(true)} />
         </header>
 
         <div className="mb-8">
@@ -110,9 +106,6 @@ const Index = () => {
         <main>
           {activeTab === 'todo' && (
             <TodoView tasks={tasks} onAdd={addTask} onUpdateStatus={updateTaskStatus} onDelete={deleteTask} />
-          )}
-          {activeTab === 'calendar' && (
-            <CalendarView tasks={tasks} getTasksByDate={getTasksByDate} onUpdateStatus={updateTaskStatus} />
           )}
           {activeTab === 'goals' && (
             <GoalsView goals={goals} tasks={tasks} addGoal={addGoal} updateGoalStatus={updateGoalStatus}
@@ -132,6 +125,8 @@ const Index = () => {
           </p>
         </footer>
       </div>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 };

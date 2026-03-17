@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
-import { ListTodo, Calendar, Target, Wallet } from 'lucide-react';
+import { ListTodo, Target, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TabNavigationProps {
-  activeTab: 'todo' | 'calendar' | 'goals' | 'finances';
-  onTabChange: (tab: 'todo' | 'calendar' | 'goals' | 'finances') => void;
+  activeTab: 'todo' | 'goals' | 'finances';
+  onTabChange: (tab: 'todo' | 'goals' | 'finances') => void;
 }
 
 export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
@@ -22,19 +22,6 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
       >
         <ListTodo className="h-4 w-4" />
         <span className="hidden sm:inline">Tarefas</span>
-      </Button>
-      <Button
-        variant="ghost"
-        onClick={() => onTabChange('calendar')}
-        className={cn(
-          "flex-1 h-10 gap-2 rounded-lg transition-all duration-200",
-          activeTab === 'calendar' 
-            ? "bg-background text-foreground shadow-sm" 
-            : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <Calendar className="h-4 w-4" />
-        <span className="hidden sm:inline">Calendário</span>
       </Button>
       <Button
         variant="ghost"

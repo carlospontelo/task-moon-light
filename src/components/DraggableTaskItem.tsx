@@ -2,7 +2,8 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Trash2, Calendar, GripVertical } from 'lucide-react';
-import { Task, TAG_COLORS, TAG_LABELS } from '@/types/task';
+import { Task } from '@/types/task';
+import { useSettings } from '@/contexts/SettingsContext';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -13,6 +14,9 @@ interface DraggableTaskItemProps {
 }
 
 export function DraggableTaskItem({ task, onDelete }: DraggableTaskItemProps) {
+  const { getTagByKey } = useSettings();
+  const tag = task.tag ? getTagByKey(task.tag) : undefined;
+
   const {
     attributes,
     listeners,
@@ -62,13 +66,13 @@ export function DraggableTaskItem({ task, onDelete }: DraggableTaskItemProps) {
               {format(parseISO(task.date), "dd MMM", { locale: ptBR })}
             </span>
           </div>
-          {task.tag && (
+          {tag && (
             <span className={cn(
               "text-xs px-2 py-0.5 rounded-full font-medium",
-              TAG_COLORS[task.tag].bg,
-              TAG_COLORS[task.tag].text
+              tag.bgColor,
+              tag.textColor
             )}>
-              {TAG_LABELS[task.tag]}
+              {tag.label}
             </span>
           )}
         </div>

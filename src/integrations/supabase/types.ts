@@ -47,6 +47,93 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_categories: {
+        Row: {
+          bar_color: string
+          created_at: string
+          icon: string
+          id: string
+          key: string
+          label: string
+          user_id: string
+        }
+        Insert: {
+          bar_color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          key: string
+          label: string
+          user_id: string
+        }
+        Update: {
+          bar_color?: string
+          created_at?: string
+          icon?: string
+          id?: string
+          key?: string
+          label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      custom_payment_methods: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          key: string
+          label: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          key: string
+          label: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          key?: string
+          label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      custom_tags: {
+        Row: {
+          bg_color: string
+          created_at: string
+          id: string
+          key: string
+          label: string
+          text_color: string
+          user_id: string
+        }
+        Insert: {
+          bg_color?: string
+          created_at?: string
+          id?: string
+          key: string
+          label: string
+          text_color?: string
+          user_id: string
+        }
+        Update: {
+          bg_color?: string
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string
+          text_color?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
@@ -173,6 +260,36 @@ export type Database = {
           tag?: string | null
           title?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          currency: string
+          default_task_status: string
+          id: string
+          updated_at: string
+          user_id: string
+          week_start_day: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          default_task_status?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          week_start_day?: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          default_task_status?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          week_start_day?: number
         }
         Relationships: []
       }

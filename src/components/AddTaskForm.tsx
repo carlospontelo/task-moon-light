@@ -7,7 +7,8 @@ import { Plus, CalendarIcon, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { TaskTag, TAG_COLORS, TAG_LABELS } from '@/types/task';
+import { TaskTag } from '@/types/task';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,18 +20,19 @@ interface AddTaskFormProps {
   onAdd: (title: string, date: string, tag?: TaskTag) => void;
 }
 
-const TAGS: TaskTag[] = ['work', 'personal', 'urgent', 'study', 'health'];
-
 export function AddTaskForm({ onAdd }: AddTaskFormProps) {
+  const { tags } = useSettings();
   const [title, setTitle] = useState('');
   const [date, setDate] = useState<Date>(new Date());
-  const [tag, setTag] = useState<TaskTag | undefined>();
+  const [tag, setTag] = useState<string | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  const selectedTag = tag ? tags.find(t => t.key === tag) : undefined;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      onAdd(title.trim(), format(date, 'yyyy-MM-dd'), tag);
+      onAdd(title.trim(), format(date, 'yyyy-MM-dd'), tag as TaskTag);
       setTitle('');
       setTag(undefined);
     }
@@ -54,25 +56,22 @@ export function AddTaskForm({ onAdd }: AddTaskFormProps) {
             variant="outline"
             className={cn(
               "h-11 px-3",
-              tag ? TAG_COLORS[tag].text : "text-muted-foreground"
+              selectedTag ? selectedTag.textColor : "text-muted-foreground"
             )}
           >
             <Tag className="h-4 w-4 mr-2" />
-            {tag ? TAG_LABELS[tag] : 'Tag'}
+            {selectedTag ? selectedTag.label : 'Tag'}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setTag(undefined)}>
             <span className="text-muted-foreground">Sem tag</span>
           </DropdownMenuItem>
-          {TAGS.map((t) => (
-            <DropdownMenuItem key={t} onClick={() => setTag(t)}>
-              <span className={cn(
-                "flex items-center gap-2",
-                TAG_COLORS[t].text
-              )}>
-                <span className={cn("w-2 h-2 rounded-full", TAG_COLORS[t].bg.replace('/20', ''))} />
-                {TAG_LABELS[t]}
+          {tags.map((t) => (
+            <DropdownMenuItem key={t.key} onClick={() => setTag(t.key)}>
+              <span className={cn("flex items-center gap-2", t.textColor)}>
+                <span className={cn("w-2 h-2 rounded-full", t.bgColor.replace('/20', ''))} />
+                {t.label}
               </span>
             </DropdownMenuItem>
           ))}
