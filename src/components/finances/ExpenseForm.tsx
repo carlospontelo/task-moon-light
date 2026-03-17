@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ExpenseType, ExpenseCategory, PaymentMethod, EXPENSE_CATEGORIES, PAYMENT_METHODS, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
+import { ExpenseType, ExpenseCategory, PaymentMethod, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
+import { useSettings } from '@/contexts/SettingsContext';
 import {
   Dialog,
   DialogContent,
@@ -36,20 +37,18 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: ExpenseFormProps) {
+  const { categories, paymentMethods } = useSettings();
   const [step, setStep] = useState<'type' | 'details'>('type');
   const [selectedType, setSelectedType] = useState<ExpenseType | null>(null);
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('other');
+  const [category, setCategory] = useState<string>('other');
   const [installmentTotal, setInstallmentTotal] = useState('12');
   const [startMonth, setStartMonth] = useState(initialMonth || getCurrentMonth());
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('');
 
-  // Update startMonth when initialMonth changes (when user navigates months)
   useEffect(() => {
-    if (initialMonth) {
-      setStartMonth(initialMonth);
-    }
+    if (initialMonth) setStartMonth(initialMonth);
   }, [initialMonth]);
 
   const resetForm = () => {
@@ -77,18 +76,17 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
     onSubmit({
       name,
       amount: amountInCents,
-      category,
+      category: category as ExpenseCategory,
       type: selectedType,
       installmentTotal: selectedType === 'installment' ? parseInt(installmentTotal) : undefined,
       startMonth,
-      paymentMethod: paymentMethod || undefined,
+      paymentMethod: (paymentMethod || undefined) as PaymentMethod | undefined,
     });
 
     resetForm();
     onOpenChange(false);
   };
 
-  // Generate month options for the select
   const currentMonth = getCurrentMonth();
   const monthOptions = getMonthRange(currentMonth, 6, 12);
 
@@ -98,24 +96,9 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
   };
 
   const typeOptions = [
-    {
-      type: 'fixed' as ExpenseType,
-      label: 'Despesa Fixa',
-      description: 'Repete todo mês automaticamente',
-      icon: RepeatIcon,
-    },
-    {
-      type: 'installment' as ExpenseType,
-      label: 'Parcelamento',
-      description: 'Divide em várias parcelas',
-      icon: CreditCard,
-    },
-    {
-      type: 'single' as ExpenseType,
-      label: 'Despesa Única',
-      description: 'Apenas este mês',
-      icon: Receipt,
-    },
+    { type: 'fixed' as ExpenseType, label: 'Despesa Fixa', description: 'Repete todo mês automaticamente', icon: RepeatIcon },
+    { type: 'installment' as ExpenseType, label: 'Parcelamento', description: 'Divide em várias parcelas', icon: CreditCard },
+    { type: 'single' as ExpenseType, label: 'Despesa Única', description: 'Apenas este mês', icon: Receipt },
   ];
 
   return (
@@ -126,10 +109,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
             {step === 'type' ? 'Nova Despesa' : `Nova ${typeOptions.find(t => t.type === selectedType)?.label}`}
           </DialogTitle>
           <DialogDescription>
-            {step === 'type' 
-              ? 'Escolha o tipo de despesa para começar'
-              : 'Preencha os detalhes da despesa'
-            }
+            {step === 'type' ? 'Escolha o tipo de despesa para começar' : 'Preencha os detalhes da despesa'}
           </DialogDescription>
         </DialogHeader>
 
@@ -158,31 +138,14 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Aluguel, Netflix, Uber..."
-                required
-              />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Aluguel, Netflix, Uber..." required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">
-                {selectedType === 'installment' ? 'Valor da parcela' : 'Valor'}
-              </Label>
+              <Label htmlFor="amount">{selectedType === 'installment' ? 'Valor da parcela' : 'Valor'}</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  R$
-                </span>
-                <Input
-                  id="amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0,00"
-                  className="pl-10"
-                  required
-                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
+                <Input id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" className="pl-10" required />
               </div>
             </div>
 
@@ -190,14 +153,10 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
               <div className="space-y-2">
                 <Label htmlFor="installments">Número de parcelas</Label>
                 <Select value={installmentTotal} onValueChange={setInstallmentTotal}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 36, 48].map((n) => (
-                      <SelectItem key={n} value={n.toString()}>
-                        {n}x
-                      </SelectItem>
+                      <SelectItem key={n} value={n.toString()}>{n}x</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -206,24 +165,14 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
 
             <div className="space-y-2">
               <Label htmlFor="startMonth">
-                {selectedType === 'single' 
-                  ? 'Mês da despesa' 
-                  : selectedType === 'installment' 
-                    ? 'Mês da primeira parcela'
-                    : 'A partir de qual mês'}
+                {selectedType === 'single' ? 'Mês da despesa' : selectedType === 'installment' ? 'Mês da primeira parcela' : 'A partir de qual mês'}
               </Label>
               <Select value={startMonth} onValueChange={setStartMonth}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {monthOptions.map((month) => {
                     const { short, year } = getMonthLabel(month);
-                    return (
-                      <SelectItem key={month} value={month}>
-                        {short} {year}
-                      </SelectItem>
-                    );
+                    return <SelectItem key={month} value={month}>{short} {year}</SelectItem>;
                   })}
                 </SelectContent>
               </Select>
@@ -231,48 +180,31 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
 
             <div className="space-y-2">
               <Label htmlFor="category">Categoria</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {Object.entries(EXPENSE_CATEGORIES).map(([key, { label, icon }]) => (
-                    <SelectItem key={key} value={key}>
-                      {icon} {label}
-                    </SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.key} value={cat.key}>{cat.icon} {cat.label}</SelectItem>
                   ))}
                 </SelectContent>
-            </Select>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="paymentMethod">Forma de pagamento</Label>
-              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod | '')}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione (opcional)" />
-                </SelectTrigger>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger>
                 <SelectContent>
-                  {Object.entries(PAYMENT_METHODS).map(([key, { label, icon }]) => (
-                    <SelectItem key={key} value={key}>
-                      {icon} {label}
-                    </SelectItem>
+                  {paymentMethods.map((pm) => (
+                    <SelectItem key={pm.key} value={pm.key}>{pm.icon} {pm.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStep('type')}
-                className="flex-1"
-              >
-                Voltar
-              </Button>
-              <Button type="submit" className="flex-1">
-                Adicionar
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setStep('type')} className="flex-1">Voltar</Button>
+              <Button type="submit" className="flex-1">Adicionar</Button>
             </div>
           </form>
         )}

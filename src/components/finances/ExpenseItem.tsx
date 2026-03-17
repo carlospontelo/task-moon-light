@@ -1,4 +1,5 @@
-import { Expense, EXPENSE_CATEGORIES, PAYMENT_METHODS, PaymentMethod, formatCurrency } from '@/types/expense';
+import { Expense, formatCurrency } from '@/types/expense';
+import { useSettings } from '@/contexts/SettingsContext';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -16,12 +17,14 @@ interface ExpenseItemProps {
 }
 
 export function ExpenseItem({ expense, onEdit, onDelete, isReadOnly }: ExpenseItemProps) {
-  const category = EXPENSE_CATEGORIES[expense.category];
+  const { getCategoryByKey, getPaymentMethodByKey } = useSettings();
+  const category = getCategoryByKey(expense.category);
+  const pm = expense.paymentMethod ? getPaymentMethodByKey(expense.paymentMethod) : undefined;
 
   return (
     <div className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-secondary/50 group transition-colors">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="text-lg shrink-0">{category.icon}</span>
+        <span className="text-lg shrink-0">{category?.icon || '📦'}</span>
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground truncate">
             {expense.name}
@@ -32,10 +35,10 @@ export function ExpenseItem({ expense, onEdit, onDelete, isReadOnly }: ExpenseIt
             )}
           </p>
           <p className="text-xs text-muted-foreground flex items-center gap-2">
-            <span>{category.label}</span>
-            {expense.paymentMethod && (
+            <span>{category?.label || expense.category}</span>
+            {pm && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-secondary text-[10px] font-medium">
-                {PAYMENT_METHODS[expense.paymentMethod].icon} {PAYMENT_METHODS[expense.paymentMethod].label}
+                {pm.icon} {pm.label}
               </span>
             )}
           </p>
