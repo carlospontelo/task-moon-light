@@ -105,7 +105,7 @@ const Index = () => {
 
         <main>
           {activeTab === 'todo' && (
-            <TodoView tasks={tasks} onAdd={addTask} onUpdateStatus={updateTaskStatus} onDelete={deleteTask} />
+            <TodoView tasks={tasks} onAdd={addTask} onUpdateStatus={updateTaskStatus} onTogglePin={togglePin} onDelete={deleteTask} />
           )}
           {activeTab === 'goals' && (
             <GoalsView goals={goals} tasks={tasks} addGoal={addGoal} updateGoalStatus={updateGoalStatus}

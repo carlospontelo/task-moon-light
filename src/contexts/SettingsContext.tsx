@@ -328,7 +328,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   return (
     <SettingsContext.Provider value={{
       tags, categories, paymentMethods, preferences, loading,
-      addTag, updateTag, deleteTag,
+      addTag, updateTag, deleteTag, reorderTags,
       addCategory, updateCategory, deleteCategory,
       addPaymentMethod, updatePaymentMethod, deletePaymentMethod,
       updatePreferences,
