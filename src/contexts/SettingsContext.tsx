@@ -247,6 +247,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     await fetchAll();
   };
 
+  const reorderTags = async (orderedIds: string[]) => {
+    // Optimistic update
+    setTags(prev => {
+      const map = new Map(prev.map(t => [t.id, t]));
+      return orderedIds.map(id => map.get(id)!).filter(Boolean);
+    });
+    // Persist sort_order
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        supabase.from('custom_tags').update({ sort_order: index } as any).eq('id', id)
+      )
+    );
+  };
+
   // Category operations
   const addCategory = async (cat: Omit<CustomCategory, 'id'>) => {
     if (!user) return;
