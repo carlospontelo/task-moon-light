@@ -184,7 +184,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     await seedDefaults();
 
     const [tagsRes, catsRes, pmRes, prefsRes] = await Promise.all([
-      supabase.from('custom_tags').select('*').eq('user_id', user.id).order('created_at'),
+      supabase.from('custom_tags').select('*').eq('user_id', user.id).order('sort_order').order('created_at'),
       supabase.from('custom_categories').select('*').eq('user_id', user.id).order('created_at'),
       supabase.from('custom_payment_methods').select('*').eq('user_id', user.id).order('created_at'),
       supabase.from('user_preferences').select('*').eq('user_id', user.id).limit(1),
