@@ -78,6 +78,7 @@ interface SettingsContextType {
   addTag: (tag: Omit<CustomTag, 'id'>) => Promise<void>;
   updateTag: (id: string, data: Partial<Omit<CustomTag, 'id'>>) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
+  reorderTags: (orderedIds: string[]) => Promise<void>;
   // Category operations
   addCategory: (cat: Omit<CustomCategory, 'id'>) => Promise<void>;
   updateCategory: (id: string, data: Partial<Omit<CustomCategory, 'id'>>) => Promise<void>;
