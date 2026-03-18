@@ -31,4 +31,5 @@ export interface Task {
   tag?: TaskTag;
   date: string;
   createdAt: string;
+  pinned: boolean;
 }

@@ -1,154 +1,128 @@
 import { useMemo } from 'react';
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-} from '@dnd-kit/core';
 import { Task, TaskStatus, TaskTag } from '@/types/task';
-import { StatusColumn } from './StatusColumn';
+import { TaskGroup } from './TaskGroup';
 import { AddTaskForm } from './AddTaskForm';
-import { CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { Pin, Sun, CalendarDays, Archive, CheckCircle2 } from 'lucide-react';
+import { isToday, parseISO, isThisWeek, isBefore, startOfDay } from 'date-fns';
 
 interface TodoViewProps {
   tasks: Task[];
   onAdd: (title: string, date: string, tag?: TaskTag) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
+  onTogglePin: (id: string, pinned: boolean) => void;
   onDelete: (id: string) => void;
 }
 
-const STATUSES: TaskStatus[] = ['pending', 'in_progress', 'completed'];
+export function TodoView({ tasks, onAdd, onUpdateStatus, onTogglePin, onDelete }: TodoViewProps) {
+  const inProgressCount = useMemo(() => tasks.filter(t => t.status === 'in_progress').length, [tasks]);
 
-export function TodoView({ tasks, onAdd, onUpdateStatus, onDelete }: TodoViewProps) {
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const groups = useMemo(() => {
+    const pinned: Task[] = [];
+    const today: Task[] = [];
+    const thisWeek: Task[] = [];
+    const backlog: Task[] = [];
+    const completed: Task[] = [];
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+    const now = startOfDay(new Date());
 
-  const tasksByStatus = useMemo(() => {
-    const grouped: Record<TaskStatus, Task[]> = {
-      pending: [],
-      in_progress: [],
-      completed: [],
-    };
+    tasks.forEach(task => {
+      if (task.status === 'completed') {
+        completed.push(task);
+        return;
+      }
 
-    tasks.forEach((task) => {
-      grouped[task.status].push(task);
+      const taskDate = parseISO(task.date);
+      const overdue = isBefore(taskDate, now);
+
+      if (task.pinned) {
+        pinned.push(task);
+      } else if (isToday(taskDate) || overdue) {
+        today.push(task);
+      } else if (isThisWeek(taskDate, { weekStartsOn: 1 })) {
+        thisWeek.push(task);
+      } else {
+        backlog.push(task);
+      }
     });
 
-    // Sort each group by date
-    Object.keys(grouped).forEach((status) => {
-      grouped[status as TaskStatus].sort((a, b) => a.date.localeCompare(b.date));
-    });
-
-    return grouped;
+    return { pinned, today, thisWeek, backlog, completed };
   }, [tasks]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveId(null);
-
-    if (!over) return;
-
-    const taskId = active.id as string;
-    const overId = over.id as string;
-
-    // Check if dropped on a status column
-    if (STATUSES.includes(overId as TaskStatus)) {
-      onUpdateStatus(taskId, overId as TaskStatus);
-      return;
-    }
-
-    // Check if dropped on another task
-    const overTask = tasks.find(t => t.id === overId);
-    if (overTask) {
-      onUpdateStatus(taskId, overTask.status);
-    }
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    
-    if (!over) return;
-
-    const taskId = active.id as string;
-    const overId = over.id as string;
-
-    // If dragging over a column, update status
-    if (STATUSES.includes(overId as TaskStatus)) {
-      const task = tasks.find(t => t.id === taskId);
-      if (task && task.status !== overId) {
-        onUpdateStatus(taskId, overId as TaskStatus);
-      }
-    }
-  };
-
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+  const activeCount = tasks.filter(t => t.status !== 'completed').length;
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="space-y-2">
+    <div className="space-y-6 animate-fade-in">
+      <div className="space-y-1">
         <h1 className="text-3xl font-semibold text-foreground">Tarefas</h1>
-        <p className="text-sm text-muted-foreground">Arraste as tarefas entre as colunas para mudar o status</p>
+        <p className="text-sm text-muted-foreground">
+          {activeCount} {activeCount === 1 ? 'tarefa ativa' : 'tarefas ativas'}
+          {inProgressCount > 0 && <span className="text-primary"> • {inProgressCount} em andamento</span>}
+        </p>
       </div>
 
-      {/* Add Task */}
       <AddTaskForm onAdd={onAdd} />
 
-      {/* Kanban Board */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-      >
-        <div className="flex flex-col gap-4">
-          {STATUSES.map((status) => (
-            <StatusColumn
-              key={status}
-              status={status}
-              tasks={tasksByStatus[status]}
-              onDelete={onDelete}
-            />
-          ))}
-        </div>
+      <div className="space-y-4">
+        <TaskGroup
+          title="Fixadas"
+          icon={<Pin className="h-3.5 w-3.5 text-primary" />}
+          tasks={groups.pinned}
+          onUpdateStatus={onUpdateStatus}
+          onTogglePin={onTogglePin}
+          onDelete={onDelete}
+          inProgressCount={inProgressCount}
+        />
 
-        <DragOverlay>
-          {activeTask && (
-            <div className="p-3 rounded-xl bg-card border border-primary/50 shadow-lg shadow-primary/20">
-              <p className="text-sm text-foreground">{activeTask.title}</p>
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+        <TaskGroup
+          title="Hoje"
+          icon={<Sun className="h-3.5 w-3.5 text-amber-400" />}
+          tasks={groups.today}
+          onUpdateStatus={onUpdateStatus}
+          onTogglePin={onTogglePin}
+          onDelete={onDelete}
+          inProgressCount={inProgressCount}
+        />
 
-      {/* Empty State */}
+        <TaskGroup
+          title="Esta semana"
+          icon={<CalendarDays className="h-3.5 w-3.5 text-blue-400" />}
+          tasks={groups.thisWeek}
+          onUpdateStatus={onUpdateStatus}
+          onTogglePin={onTogglePin}
+          onDelete={onDelete}
+          inProgressCount={inProgressCount}
+        />
+
+        <TaskGroup
+          title="Backlog"
+          icon={<Archive className="h-3.5 w-3.5 text-muted-foreground" />}
+          tasks={groups.backlog}
+          onUpdateStatus={onUpdateStatus}
+          onTogglePin={onTogglePin}
+          onDelete={onDelete}
+          inProgressCount={inProgressCount}
+        />
+
+        <TaskGroup
+          title="Concluídas"
+          icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
+          tasks={groups.completed}
+          onUpdateStatus={onUpdateStatus}
+          onTogglePin={onTogglePin}
+          onDelete={onDelete}
+          inProgressCount={inProgressCount}
+          defaultOpen={false}
+          muted
+        />
+      </div>
+
       {tasks.length === 0 && (
         <div className="text-center py-16">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted/50 mb-4">
             <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="text-muted-foreground">Nenhuma tarefa ainda</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">
-            Adicione sua primeira tarefa acima
-          </p>
+          <p className="text-sm text-muted-foreground/70 mt-1">Adicione sua primeira tarefa acima</p>
         </div>
       )}
     </div>
