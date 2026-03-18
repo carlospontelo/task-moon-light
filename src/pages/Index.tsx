@@ -16,7 +16,7 @@ const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const [showMigration, setShowMigration] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
-  const { tasks, addTask, updateTaskStatus, deleteTask } = useTasks();
+  const { tasks, addTask, updateTaskStatus, togglePin, deleteTask } = useTasks();
   const {
     expenses, addExpense, updateExpense, deleteExpense,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
@@ -105,7 +105,7 @@ const Index = () => {
 
         <main>
           {activeTab === 'todo' && (
-            <TodoView tasks={tasks} onAdd={addTask} onUpdateStatus={updateTaskStatus} onDelete={deleteTask} />
+            <TodoView tasks={tasks} onAdd={addTask} onUpdateStatus={updateTaskStatus} onTogglePin={togglePin} onDelete={deleteTask} />
           )}
           {activeTab === 'goals' && (
             <GoalsView goals={goals} tasks={tasks} addGoal={addGoal} updateGoalStatus={updateGoalStatus}

@@ -16,6 +16,7 @@ export function useTasks() {
     tag: (t.tag as TaskTag) || undefined,
     date: t.date,
     createdAt: t.created_at,
+    pinned: t.pinned ?? false,
   });
 
   const fetchTasks = useCallback(async () => {
@@ -32,7 +33,6 @@ export function useTasks() {
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
-  // Realtime subscription
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -56,12 +56,16 @@ export function useTasks() {
   const addTask = async (title: string, date: string, tag?: TaskTag) => {
     if (!user) return;
     await supabase.from('tasks').insert({
-      user_id: user.id, title, status: 'pending', tag: tag || null, date,
+      user_id: user.id, title, status: 'pending', tag: tag || null, date, pinned: false,
     });
   };
 
   const updateTaskStatus = async (id: string, status: TaskStatus) => {
     await supabase.from('tasks').update({ status }).eq('id', id);
+  };
+
+  const togglePin = async (id: string, pinned: boolean) => {
+    await supabase.from('tasks').update({ pinned }).eq('id', id);
   };
 
   const deleteTask = async (id: string) => {
@@ -70,5 +74,5 @@ export function useTasks() {
 
   const getTasksByDate = (date: string) => tasks.filter((t) => t.date === date);
 
-  return { tasks, loading, addTask, updateTaskStatus, deleteTask, getTasksByDate };
+  return { tasks, loading, addTask, updateTaskStatus, togglePin, deleteTask, getTasksByDate };
 }

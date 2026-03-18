@@ -78,6 +78,7 @@ interface SettingsContextType {
   addTag: (tag: Omit<CustomTag, 'id'>) => Promise<void>;
   updateTag: (id: string, data: Partial<Omit<CustomTag, 'id'>>) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
+  reorderTags: (orderedIds: string[]) => Promise<void>;
   // Category operations
   addCategory: (cat: Omit<CustomCategory, 'id'>) => Promise<void>;
   updateCategory: (id: string, data: Partial<Omit<CustomCategory, 'id'>>) => Promise<void>;
@@ -183,7 +184,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     await seedDefaults();
 
     const [tagsRes, catsRes, pmRes, prefsRes] = await Promise.all([
-      supabase.from('custom_tags').select('*').eq('user_id', user.id).order('created_at'),
+      supabase.from('custom_tags').select('*').eq('user_id', user.id).order('sort_order').order('created_at'),
       supabase.from('custom_categories').select('*').eq('user_id', user.id).order('created_at'),
       supabase.from('custom_payment_methods').select('*').eq('user_id', user.id).order('created_at'),
       supabase.from('user_preferences').select('*').eq('user_id', user.id).limit(1),
@@ -244,6 +245,20 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const deleteTag = async (id: string) => {
     await supabase.from('custom_tags').delete().eq('id', id);
     await fetchAll();
+  };
+
+  const reorderTags = async (orderedIds: string[]) => {
+    // Optimistic update
+    setTags(prev => {
+      const map = new Map(prev.map(t => [t.id, t]));
+      return orderedIds.map(id => map.get(id)!).filter(Boolean);
+    });
+    // Persist sort_order
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        supabase.from('custom_tags').update({ sort_order: index } as any).eq('id', id)
+      )
+    );
   };
 
   // Category operations
@@ -313,7 +328,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   return (
     <SettingsContext.Provider value={{
       tags, categories, paymentMethods, preferences, loading,
-      addTag, updateTag, deleteTag,
+      addTag, updateTag, deleteTag, reorderTags,
       addCategory, updateCategory, deleteCategory,
       addPaymentMethod, updatePaymentMethod, deletePaymentMethod,
       updatePreferences,

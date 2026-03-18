@@ -111,6 +111,7 @@ export type Database = {
           id: string
           key: string
           label: string
+          sort_order: number
           text_color: string
           user_id: string
         }
@@ -120,6 +121,7 @@ export type Database = {
           id?: string
           key: string
           label: string
+          sort_order?: number
           text_color?: string
           user_id: string
         }
@@ -129,6 +131,7 @@ export type Database = {
           id?: string
           key?: string
           label?: string
+          sort_order?: number
           text_color?: string
           user_id?: string
         }
@@ -238,6 +241,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          pinned: boolean
           status: string
           tag: string | null
           title: string
@@ -247,6 +251,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          pinned?: boolean
           status?: string
           tag?: string | null
           title: string
@@ -256,6 +261,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          pinned?: boolean
           status?: string
           tag?: string | null
           title?: string
