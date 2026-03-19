@@ -16,7 +16,7 @@ const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const [showMigration, setShowMigration] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
-  const { tasks, addTask, updateTaskStatus, togglePin, deleteTask } = useTasks();
+  const { tasks, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask } = useTasks();
   const {
     expenses, addExpense, updateExpense, deleteExpense,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
@@ -85,7 +85,7 @@ const Index = () => {
         }}
       />
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 border border-primary/20">
@@ -105,7 +105,14 @@ const Index = () => {
 
         <main>
           {activeTab === 'todo' && (
-            <TodoView tasks={tasks} onAdd={addTask} onUpdateStatus={updateTaskStatus} onTogglePin={togglePin} onDelete={deleteTask} />
+            <TodoView
+              tasks={tasks}
+              onAdd={addTask}
+              onUpdateStatus={updateTaskStatus}
+              onUpdateTask={updateTask}
+              onMoveTask={moveTask}
+              onDelete={deleteTask}
+            />
           )}
           {activeTab === 'goals' && (
             <GoalsView goals={goals} tasks={tasks} addGoal={addGoal} updateGoalStatus={updateGoalStatus}

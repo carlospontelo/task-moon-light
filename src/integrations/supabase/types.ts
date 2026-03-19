@@ -238,6 +238,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          board_group: string
           created_at: string
           date: string
           id: string
@@ -248,6 +249,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          board_group?: string
           created_at?: string
           date: string
           id?: string
@@ -258,6 +260,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          board_group?: string
           created_at?: string
           date?: string
           id?: string

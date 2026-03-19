@@ -1,8 +1,9 @@
 /* @refresh reset */
 import { useState, useEffect, useCallback } from 'react';
-import { Task, TaskStatus, TaskTag } from '@/types/task';
+import { Task, TaskStatus, TaskTag, BoardGroup } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { format, startOfDay, isBefore, parseISO } from 'date-fns';
 
 export function useTasks() {
   const { user } = useAuth();
@@ -17,10 +18,27 @@ export function useTasks() {
     date: t.date,
     createdAt: t.created_at,
     pinned: t.pinned ?? false,
+    boardGroup: (t.board_group as BoardGroup) || 'today',
   });
+
+  // Auto-cleanup: delete completed tasks from previous days
+  const cleanupCompletedTasks = useCallback(async () => {
+    if (!user) return;
+    const today = format(startOfDay(new Date()), 'yyyy-MM-dd');
+    await supabase
+      .from('tasks')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .lt('date', today);
+  }, [user]);
 
   const fetchTasks = useCallback(async () => {
     if (!user) { setTasks([]); setLoading(false); return; }
+    
+    // Cleanup old completed tasks first
+    await cleanupCompletedTasks();
+    
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
@@ -29,7 +47,7 @@ export function useTasks() {
 
     if (!error && data) setTasks(data.map(mapRow));
     setLoading(false);
-  }, [user]);
+  }, [user, cleanupCompletedTasks]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
@@ -53,10 +71,11 @@ export function useTasks() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const addTask = async (title: string, date: string, tag?: TaskTag) => {
+  const addTask = async (title: string) => {
     if (!user) return;
+    const today = format(new Date(), 'yyyy-MM-dd');
     await supabase.from('tasks').insert({
-      user_id: user.id, title, status: 'pending', tag: tag || null, date, pinned: false,
+      user_id: user.id, title, status: 'pending', tag: null, date: today, pinned: false, board_group: 'today',
     });
   };
 
@@ -64,8 +83,18 @@ export function useTasks() {
     await supabase.from('tasks').update({ status }).eq('id', id);
   };
 
+  const updateTask = async (id: string, updates: { date?: string; tag?: string | null }) => {
+    await supabase.from('tasks').update(updates).eq('id', id);
+  };
+
+  const moveTask = async (id: string, boardGroup: BoardGroup) => {
+    const pinned = boardGroup === 'pinned';
+    await supabase.from('tasks').update({ board_group: boardGroup, pinned }).eq('id', id);
+  };
+
   const togglePin = async (id: string, pinned: boolean) => {
-    await supabase.from('tasks').update({ pinned }).eq('id', id);
+    const boardGroup = pinned ? 'pinned' : 'today';
+    await supabase.from('tasks').update({ pinned, board_group: boardGroup }).eq('id', id);
   };
 
   const deleteTask = async (id: string) => {
@@ -74,5 +103,5 @@ export function useTasks() {
 
   const getTasksByDate = (date: string) => tasks.filter((t) => t.date === date);
 
-  return { tasks, loading, addTask, updateTaskStatus, togglePin, deleteTask, getTasksByDate };
+  return { tasks, loading, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, getTasksByDate };
 }
