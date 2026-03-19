@@ -85,8 +85,15 @@ export function useTasks() {
     await supabase.from('tasks').update({ status }).eq('id', id);
   };
 
-  const updateTask = async (id: string, updates: { date?: string; tag?: string | null }) => {
-    await supabase.from('tasks').update(updates).eq('id', id);
+  const updateTask = async (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => {
+    const dbUpdates: any = {};
+    if (updates.date !== undefined) dbUpdates.date = updates.date;
+    if (updates.tag !== undefined) dbUpdates.tag = updates.tag;
+    if (updates.boardGroup !== undefined) {
+      dbUpdates.board_group = updates.boardGroup;
+      dbUpdates.pinned = updates.boardGroup === 'pinned';
+    }
+    await supabase.from('tasks').update(dbUpdates).eq('id', id);
   };
 
   const moveTask = async (id: string, boardGroup: BoardGroup) => {
