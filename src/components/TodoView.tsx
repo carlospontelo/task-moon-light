@@ -8,9 +8,9 @@ import { EditTaskDialog } from './EditTaskDialog';
 
 interface TodoViewProps {
   tasks: Task[];
-  onAdd: (title: string) => void;
+  onAdd: (title: string, options?: { date?: string; tag?: string; boardGroup?: BoardGroup }) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
-  onUpdateTask: (id: string, updates: { date?: string; tag?: string | null }) => void;
+  onUpdateTask: (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => void;
   onMoveTask: (id: string, group: BoardGroup) => void;
   onDelete: (id: string) => void;
 }
