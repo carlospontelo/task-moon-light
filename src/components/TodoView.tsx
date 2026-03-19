@@ -91,7 +91,7 @@ export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTas
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {GROUPS.map(group => (
             <TaskColumn
               key={group}

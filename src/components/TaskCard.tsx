@@ -1,10 +1,10 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
-import { Trash2, Calendar, Circle, Loader2, CheckCircle2, Play, Pencil, AlertTriangle } from 'lucide-react';
+import { Trash2, Calendar, Circle, Loader2, CheckCircle2, Play, Pencil } from 'lucide-react';
 import { Task, TaskStatus } from '@/types/task';
 import { useSettings } from '@/contexts/SettingsContext';
-import { format, parseISO, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +25,6 @@ const STATUS_ICON: Record<TaskStatus, React.ReactNode> = {
 export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCount }: TaskCardProps) {
   const { getTagByKey } = useSettings();
   const tag = task.tag ? getTagByKey(task.tag) : undefined;
-  const isOverdue = isBefore(parseISO(task.date), startOfDay(new Date())) && task.status !== 'completed';
   const isInProgress = task.status === 'in_progress';
 
   const {
@@ -94,11 +93,8 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
           {task.title}
         </p>
         <div className="flex items-center gap-2 mt-1">
-          <div className={cn(
-            "flex items-center gap-1",
-            isOverdue ? "text-destructive" : "text-muted-foreground"
-          )}>
-            {isOverdue ? <AlertTriangle className="h-3 w-3" /> : <Calendar className="h-3 w-3" />}
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <Calendar className="h-3 w-3" />
             <span className="text-[11px] font-mono">
               {format(parseISO(task.date), "dd MMM", { locale: ptBR })}
             </span>
