@@ -1,54 +1,77 @@
-import { useMemo } from 'react';
-import { Task, TaskStatus, TaskTag } from '@/types/task';
-import { TaskGroup } from './TaskGroup';
+import { useMemo, useState } from 'react';
+import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { Task, TaskStatus, BoardGroup } from '@/types/task';
+import { TaskColumn } from './TaskColumn';
+import { TaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
-import { Pin, Sun, CalendarDays, Archive, CheckCircle2 } from 'lucide-react';
-import { isToday, parseISO, isThisWeek, isBefore, startOfDay } from 'date-fns';
+import { EditTaskDialog } from './EditTaskDialog';
 
 interface TodoViewProps {
   tasks: Task[];
-  onAdd: (title: string, date: string, tag?: TaskTag) => void;
+  onAdd: (title: string) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
-  onTogglePin: (id: string, pinned: boolean) => void;
+  onUpdateTask: (id: string, updates: { date?: string; tag?: string | null }) => void;
+  onMoveTask: (id: string, group: BoardGroup) => void;
   onDelete: (id: string) => void;
 }
 
-export function TodoView({ tasks, onAdd, onUpdateStatus, onTogglePin, onDelete }: TodoViewProps) {
+const GROUPS: BoardGroup[] = ['pinned', 'today', 'this_week', 'standby'];
+
+export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete }: TodoViewProps) {
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const activeTasks = useMemo(() => tasks.filter(t => t.status !== 'completed'), [tasks]);
+  const completedTodayTasks = useMemo(() => tasks.filter(t => t.status === 'completed'), [tasks]);
   const inProgressCount = useMemo(() => tasks.filter(t => t.status === 'in_progress').length, [tasks]);
 
-  const groups = useMemo(() => {
-    const pinned: Task[] = [];
-    const today: Task[] = [];
-    const thisWeek: Task[] = [];
-    const backlog: Task[] = [];
-    const completed: Task[] = [];
-
-    const now = startOfDay(new Date());
-
-    tasks.forEach(task => {
-      if (task.status === 'completed') {
-        completed.push(task);
-        return;
-      }
-
-      const taskDate = parseISO(task.date);
-      const overdue = isBefore(taskDate, now);
-
-      if (task.pinned) {
-        pinned.push(task);
-      } else if (isToday(taskDate) || overdue) {
-        today.push(task);
-      } else if (isThisWeek(taskDate, { weekStartsOn: 1 })) {
-        thisWeek.push(task);
-      } else {
-        backlog.push(task);
-      }
+  const tasksByGroup = useMemo(() => {
+    const groups: Record<BoardGroup, Task[]> = { pinned: [], today: [], this_week: [], standby: [] };
+    activeTasks.forEach(task => {
+      const group = task.boardGroup || 'today';
+      if (groups[group]) groups[group].push(task);
     });
+    return groups;
+  }, [activeTasks]);
 
-    return { pinned, today, thisWeek, backlog, completed };
-  }, [tasks]);
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
-  const activeCount = tasks.filter(t => t.status !== 'completed').length;
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const overId = over.id as string;
+
+    // Check if dropped on a column
+    if (GROUPS.includes(overId as BoardGroup)) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task && task.boardGroup !== overId) {
+        onMoveTask(taskId, overId as BoardGroup);
+      }
+      return;
+    }
+
+    // Dropped on another task — find which column that task belongs to
+    const overTask = tasks.find(t => t.id === overId);
+    if (overTask) {
+      const task = tasks.find(t => t.id === taskId);
+      if (task && task.boardGroup !== overTask.boardGroup) {
+        onMoveTask(taskId, overTask.boardGroup);
+      }
+    }
+  };
+
+  const activeCount = activeTasks.length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -62,69 +85,69 @@ export function TodoView({ tasks, onAdd, onUpdateStatus, onTogglePin, onDelete }
 
       <AddTaskForm onAdd={onAdd} />
 
-      <div className="space-y-4">
-        <TaskGroup
-          title="Fixadas"
-          icon={<Pin className="h-3.5 w-3.5 text-primary" />}
-          tasks={groups.pinned}
-          onUpdateStatus={onUpdateStatus}
-          onTogglePin={onTogglePin}
-          onDelete={onDelete}
-          inProgressCount={inProgressCount}
-        />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {GROUPS.map(group => (
+            <TaskColumn
+              key={group}
+              group={group}
+              tasks={tasksByGroup[group]}
+              onUpdateStatus={onUpdateStatus}
+              onDelete={onDelete}
+              onEdit={setEditingTask}
+              inProgressCount={inProgressCount}
+            />
+          ))}
+        </div>
 
-        <TaskGroup
-          title="Hoje"
-          icon={<Sun className="h-3.5 w-3.5 text-amber-400" />}
-          tasks={groups.today}
-          onUpdateStatus={onUpdateStatus}
-          onTogglePin={onTogglePin}
-          onDelete={onDelete}
-          inProgressCount={inProgressCount}
-        />
+        <DragOverlay>
+          {activeTask ? (
+            <div className="bg-card border border-primary/30 rounded-lg px-3 py-2.5 shadow-xl shadow-primary/10">
+              <p className="text-sm text-foreground">{activeTask.title}</p>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
-        <TaskGroup
-          title="Esta semana"
-          icon={<CalendarDays className="h-3.5 w-3.5 text-blue-400" />}
-          tasks={groups.thisWeek}
-          onUpdateStatus={onUpdateStatus}
-          onTogglePin={onTogglePin}
-          onDelete={onDelete}
-          inProgressCount={inProgressCount}
-        />
-
-        <TaskGroup
-          title="Backlog"
-          icon={<Archive className="h-3.5 w-3.5 text-muted-foreground" />}
-          tasks={groups.backlog}
-          onUpdateStatus={onUpdateStatus}
-          onTogglePin={onTogglePin}
-          onDelete={onDelete}
-          inProgressCount={inProgressCount}
-        />
-
-        <TaskGroup
-          title="Concluídas"
-          icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
-          tasks={groups.completed}
-          onUpdateStatus={onUpdateStatus}
-          onTogglePin={onTogglePin}
-          onDelete={onDelete}
-          inProgressCount={inProgressCount}
-          defaultOpen={false}
-          muted
-        />
-      </div>
+      {/* Completed tasks - today only */}
+      {completedTodayTasks.length > 0 && (
+        <details className="group">
+          <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground uppercase tracking-wider font-semibold py-2 select-none">
+            <span className="transition-transform group-open:rotate-90">▶</span>
+            Concluídas hoje
+            <span className="bg-secondary/50 px-1.5 py-0.5 rounded-full font-mono">
+              {completedTodayTasks.length}
+            </span>
+          </summary>
+          <div className="space-y-1 mt-2 opacity-50">
+            {completedTodayTasks.map(task => (
+              <div key={task.id} className="flex items-center gap-3 px-3 py-2 rounded-lg">
+                <span className="text-emerald-400">✓</span>
+                <p className="text-sm line-through text-muted-foreground">{task.title}</p>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {tasks.length === 0 && (
         <div className="text-center py-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted/50 mb-4">
-            <CheckCircle2 className="h-8 w-8 text-muted-foreground" />
-          </div>
           <p className="text-muted-foreground">Nenhuma tarefa ainda</p>
           <p className="text-sm text-muted-foreground/70 mt-1">Adicione sua primeira tarefa acima</p>
         </div>
       )}
+
+      <EditTaskDialog
+        task={editingTask}
+        open={!!editingTask}
+        onOpenChange={(open) => { if (!open) setEditingTask(null); }}
+        onSave={onUpdateTask}
+      />
     </div>
   );
 }
