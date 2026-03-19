@@ -71,11 +71,13 @@ export function useTasks() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const addTask = async (title: string) => {
+  const addTask = async (title: string, options?: { date?: string; tag?: string; boardGroup?: BoardGroup }) => {
     if (!user) return;
     const today = format(new Date(), 'yyyy-MM-dd');
+    const group = options?.boardGroup || 'today';
     await supabase.from('tasks').insert({
-      user_id: user.id, title, status: 'pending', tag: null, date: today, pinned: false, board_group: 'today',
+      user_id: user.id, title, status: 'pending', tag: options?.tag || null,
+      date: options?.date || today, pinned: group === 'pinned', board_group: group,
     });
   };
 
