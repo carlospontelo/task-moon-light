@@ -8,9 +8,9 @@ import { EditTaskDialog } from './EditTaskDialog';
 
 interface TodoViewProps {
   tasks: Task[];
-  onAdd: (title: string) => void;
+  onAdd: (title: string, options?: { date?: string; tag?: string; boardGroup?: BoardGroup }) => void;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
-  onUpdateTask: (id: string, updates: { date?: string; tag?: string | null }) => void;
+  onUpdateTask: (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => void;
   onMoveTask: (id: string, group: BoardGroup) => void;
   onDelete: (id: string) => void;
 }
@@ -91,7 +91,7 @@ export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTas
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {GROUPS.map(group => (
             <TaskColumn
               key={group}

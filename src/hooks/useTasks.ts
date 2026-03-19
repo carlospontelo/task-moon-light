@@ -71,11 +71,13 @@ export function useTasks() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const addTask = async (title: string) => {
+  const addTask = async (title: string, options?: { date?: string; tag?: string; boardGroup?: BoardGroup }) => {
     if (!user) return;
     const today = format(new Date(), 'yyyy-MM-dd');
+    const group = options?.boardGroup || 'today';
     await supabase.from('tasks').insert({
-      user_id: user.id, title, status: 'pending', tag: null, date: today, pinned: false, board_group: 'today',
+      user_id: user.id, title, status: 'pending', tag: options?.tag || null,
+      date: options?.date || today, pinned: group === 'pinned', board_group: group,
     });
   };
 
@@ -83,8 +85,15 @@ export function useTasks() {
     await supabase.from('tasks').update({ status }).eq('id', id);
   };
 
-  const updateTask = async (id: string, updates: { date?: string; tag?: string | null }) => {
-    await supabase.from('tasks').update(updates).eq('id', id);
+  const updateTask = async (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => {
+    const dbUpdates: any = {};
+    if (updates.date !== undefined) dbUpdates.date = updates.date;
+    if (updates.tag !== undefined) dbUpdates.tag = updates.tag;
+    if (updates.boardGroup !== undefined) {
+      dbUpdates.board_group = updates.boardGroup;
+      dbUpdates.pinned = updates.boardGroup === 'pinned';
+    }
+    await supabase.from('tasks').update(dbUpdates).eq('id', id);
   };
 
   const moveTask = async (id: string, boardGroup: BoardGroup) => {
