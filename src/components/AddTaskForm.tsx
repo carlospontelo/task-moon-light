@@ -23,7 +23,7 @@ export function AddTaskForm({ onAdd }: AddTaskFormProps) {
   const [boardGroup, setBoardGroup] = useState<BoardGroup>('today');
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  const selectedTag = tag ? tags.find(t => t.key === tag) : undefined;
+  const selectedTag = tag ? tags.find(t => t.id === tag) : undefined;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
