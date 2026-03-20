@@ -22,7 +22,7 @@ export function useExpenses() {
     id: e.id,
     name: e.name,
     amount: e.amount,
-    category: e.category as ExpenseCategory,
+    category: e.category,
     type: e.type as ExpenseType,
     installmentCurrent: e.installment_current || undefined,
     installmentTotal: e.installment_total || undefined,
