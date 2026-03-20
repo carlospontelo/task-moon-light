@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ExpenseCategory, formatCurrency } from '@/types/expense';
+import { formatCurrency } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
 
 interface MonthSummaryProps {
