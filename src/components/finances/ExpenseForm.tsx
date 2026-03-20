@@ -28,11 +28,11 @@ interface ExpenseFormProps {
   onSubmit: (data: {
     name: string;
     amount: number;
-    category: ExpenseCategory;
+    category: string;
     type: ExpenseType;
     installmentTotal?: number;
     startMonth: string;
-    paymentMethod?: PaymentMethod;
+    paymentMethod?: string;
   }) => void;
 }
 
