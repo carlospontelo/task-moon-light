@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ExpenseType, ExpenseCategory, PaymentMethod, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
+import { ExpenseType, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   Dialog,
