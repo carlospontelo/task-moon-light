@@ -75,10 +75,14 @@ export function useTasks() {
     if (!user) return;
     const today = format(new Date(), 'yyyy-MM-dd');
     const group = options?.boardGroup || 'today';
-    await supabase.from('tasks').insert({
-      user_id: user.id, title, status: 'pending', tag: options?.tag || null,
+    const tagValue = options?.tag && options.tag.trim() !== '' ? options.tag : null;
+    const { error } = await supabase.from('tasks').insert({
+      user_id: user.id, title, status: 'pending', tag: tagValue,
       date: options?.date || today, pinned: group === 'pinned', board_group: group,
     });
+    if (error) {
+      console.error('[addTask] Insert failed:', error.message, { title, tag: tagValue, group });
+    }
   };
 
   const updateTaskStatus = async (id: string, status: TaskStatus) => {
@@ -88,12 +92,15 @@ export function useTasks() {
   const updateTask = async (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => {
     const dbUpdates: any = {};
     if (updates.date !== undefined) dbUpdates.date = updates.date;
-    if (updates.tag !== undefined) dbUpdates.tag = updates.tag;
+    if (updates.tag !== undefined) dbUpdates.tag = updates.tag === '' ? null : updates.tag;
     if (updates.boardGroup !== undefined) {
       dbUpdates.board_group = updates.boardGroup;
       dbUpdates.pinned = updates.boardGroup === 'pinned';
     }
-    await supabase.from('tasks').update(dbUpdates).eq('id', id);
+    const { error } = await supabase.from('tasks').update(dbUpdates).eq('id', id);
+    if (error) {
+      console.error('[updateTask] Update failed:', error.message, { id, updates: dbUpdates });
+    }
   };
 
   const moveTask = async (id: string, boardGroup: BoardGroup) => {
