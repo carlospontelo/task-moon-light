@@ -111,7 +111,7 @@ export function AddTaskForm({ onAdd }: AddTaskFormProps) {
               <span className="text-muted-foreground">Sem tag</span>
             </DropdownMenuItem>
             {tags.map((t) => (
-              <DropdownMenuItem key={t.key} onSelect={() => setTag(t.key)}>
+              <DropdownMenuItem key={t.id} onSelect={() => setTag(t.id)}>
                 <span className={cn("flex items-center gap-2", t.textColor)}>
                   <span className={cn("w-2 h-2 rounded-full", t.bgColor.replace('/20', ''))} />
                   {t.label}

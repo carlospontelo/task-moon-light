@@ -321,7 +321,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   };
 
   // Lookup helpers
-  const getTagByKey = (key: string) => tags.find(t => t.key === key);
+  const getTagByKey = (key: string) => tags.find(t => t.key === key || t.id === key);
   const getCategoryByKey = (key: string) => categories.find(c => c.key === key);
   const getPaymentMethodByKey = (key: string) => paymentMethods.find(pm => pm.key === key);
 
