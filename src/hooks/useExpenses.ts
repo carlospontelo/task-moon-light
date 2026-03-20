@@ -93,8 +93,8 @@ export function useExpenses() {
   }, [rawExpenses]);
 
   const addExpense = useCallback(async (data: {
-    name: string; amount: number; category: ExpenseCategory; type: ExpenseType;
-    installmentTotal?: number; startMonth: string; paymentMethod?: PaymentMethod;
+    name: string; amount: number; category: string; type: ExpenseType;
+    installmentTotal?: number; startMonth: string; paymentMethod?: string;
   }) => {
     if (!user) return;
 
