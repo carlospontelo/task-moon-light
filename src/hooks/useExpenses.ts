@@ -29,7 +29,7 @@ export function useExpenses() {
     installmentGroupId: e.installment_group_id || undefined,
     fixedGroupId: e.fixed_group_id || undefined,
     month: e.month,
-    paymentMethod: (e.payment_method as PaymentMethod) || undefined,
+    paymentMethod: e.payment_method || undefined,
     createdAt: new Date(e.created_at),
   });
 
