@@ -75,10 +75,14 @@ export function useTasks() {
     if (!user) return;
     const today = format(new Date(), 'yyyy-MM-dd');
     const group = options?.boardGroup || 'today';
-    await supabase.from('tasks').insert({
-      user_id: user.id, title, status: 'pending', tag: options?.tag || null,
+    const tagValue = options?.tag && options.tag.trim() !== '' ? options.tag : null;
+    const { error } = await supabase.from('tasks').insert({
+      user_id: user.id, title, status: 'pending', tag: tagValue,
       date: options?.date || today, pinned: group === 'pinned', board_group: group,
     });
+    if (error) {
+      console.error('[addTask] Insert failed:', error.message, { title, tag: tagValue, group });
+    }
   };
 
   const updateTaskStatus = async (id: string, status: TaskStatus) => {
