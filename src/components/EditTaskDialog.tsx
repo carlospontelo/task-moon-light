@@ -37,7 +37,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
     setInitialized(false);
   }
 
-  const selectedTag = tag ? tags.find(t => t.key === tag) : undefined;
+  const selectedTag = tag ? tags.find(t => t.id === tag) : undefined;
 
   const handleSave = () => {
     if (!task || !date) return;
