@@ -1,6 +1,6 @@
 /* @refresh reset */
 import { useState, useEffect, useCallback } from 'react';
-import { Task, TaskStatus, TaskTag, BoardGroup } from '@/types/task';
+import { Task, TaskStatus, BoardGroup } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, startOfDay, isBefore, parseISO } from 'date-fns';
@@ -14,7 +14,7 @@ export function useTasks() {
     id: t.id,
     title: t.title,
     status: t.status as TaskStatus,
-    tag: (t.tag as TaskTag) || undefined,
+    tag: t.tag || undefined,
     date: t.date,
     createdAt: t.created_at,
     pinned: t.pinned ?? false,

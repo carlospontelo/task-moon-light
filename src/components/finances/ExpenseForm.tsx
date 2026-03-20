@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ExpenseType, ExpenseCategory, PaymentMethod, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
+import { ExpenseType, getMonthRange, getMonthLabel, getCurrentMonth } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   Dialog,
@@ -28,11 +28,11 @@ interface ExpenseFormProps {
   onSubmit: (data: {
     name: string;
     amount: number;
-    category: ExpenseCategory;
+    category: string;
     type: ExpenseType;
     installmentTotal?: number;
     startMonth: string;
-    paymentMethod?: PaymentMethod;
+    paymentMethod?: string;
   }) => void;
 }
 
@@ -76,11 +76,11 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
     onSubmit({
       name,
       amount: amountInCents,
-      category: category as ExpenseCategory,
+      category,
       type: selectedType,
       installmentTotal: selectedType === 'installment' ? parseInt(installmentTotal) : undefined,
       startMonth,
-      paymentMethod: (paymentMethod || undefined) as PaymentMethod | undefined,
+      paymentMethod: paymentMethod || undefined,
     });
 
     resetForm();

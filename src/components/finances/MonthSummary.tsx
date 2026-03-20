@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { ExpenseCategory, formatCurrency } from '@/types/expense';
+import { formatCurrency } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
 
 interface MonthSummaryProps {
   total: number;
-  breakdown: Record<ExpenseCategory, { amount: number; percentage: number }>;
+  breakdown: Record<string, { amount: number; percentage: number }>;
 }
 
 export function MonthSummary({ total, breakdown }: MonthSummaryProps) {

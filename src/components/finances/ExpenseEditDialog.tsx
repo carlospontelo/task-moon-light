@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Expense, ExpenseCategory, PaymentMethod } from '@/types/expense';
+import { Expense } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   Dialog,
@@ -56,7 +56,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
     const amountInCents = Math.round(parseFloat(amount.replace(',', '.')) * 100);
     onSave(
       expense.id,
-      { name, amount: amountInCents, category: category as ExpenseCategory, paymentMethod: (paymentMethod || undefined) as PaymentMethod | undefined },
+      { name, amount: amountInCents, category, paymentMethod: paymentMethod || undefined },
       scope
     );
     onOpenChange(false);
