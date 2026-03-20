@@ -92,12 +92,15 @@ export function useTasks() {
   const updateTask = async (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => {
     const dbUpdates: any = {};
     if (updates.date !== undefined) dbUpdates.date = updates.date;
-    if (updates.tag !== undefined) dbUpdates.tag = updates.tag;
+    if (updates.tag !== undefined) dbUpdates.tag = updates.tag === '' ? null : updates.tag;
     if (updates.boardGroup !== undefined) {
       dbUpdates.board_group = updates.boardGroup;
       dbUpdates.pinned = updates.boardGroup === 'pinned';
     }
-    await supabase.from('tasks').update(dbUpdates).eq('id', id);
+    const { error } = await supabase.from('tasks').update(dbUpdates).eq('id', id);
+    if (error) {
+      console.error('[updateTask] Update failed:', error.message, { id, updates: dbUpdates });
+    }
   };
 
   const moveTask = async (id: string, boardGroup: BoardGroup) => {
