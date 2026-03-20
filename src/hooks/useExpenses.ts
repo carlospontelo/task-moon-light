@@ -185,14 +185,14 @@ export function useExpenses() {
   const getCategoryBreakdown = useCallback((month: string) => {
     const monthExpenses = expenses.filter((e) => e.month === month);
     const total = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const breakdown: Record<ExpenseCategory, { amount: number; percentage: number }> = {} as any;
+    const breakdown: Record<string, { amount: number; percentage: number }> = {};
     monthExpenses.forEach((e) => {
       if (!breakdown[e.category]) breakdown[e.category] = { amount: 0, percentage: 0 };
       breakdown[e.category].amount += e.amount;
     });
     Object.keys(breakdown).forEach((cat) => {
-      breakdown[cat as ExpenseCategory].percentage = total > 0
-        ? Math.round((breakdown[cat as ExpenseCategory].amount / total) * 100) : 0;
+      breakdown[cat].percentage = total > 0
+        ? Math.round((breakdown[cat].amount / total) * 100) : 0;
     });
     return { breakdown, total };
   }, [expenses]);

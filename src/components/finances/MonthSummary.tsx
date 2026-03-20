@@ -4,7 +4,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 
 interface MonthSummaryProps {
   total: number;
-  breakdown: Record<ExpenseCategory, { amount: number; percentage: number }>;
+  breakdown: Record<string, { amount: number; percentage: number }>;
 }
 
 export function MonthSummary({ total, breakdown }: MonthSummaryProps) {

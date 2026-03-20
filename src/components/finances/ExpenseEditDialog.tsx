@@ -56,7 +56,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
     const amountInCents = Math.round(parseFloat(amount.replace(',', '.')) * 100);
     onSave(
       expense.id,
-      { name, amount: amountInCents, category: category as ExpenseCategory, paymentMethod: (paymentMethod || undefined) as PaymentMethod | undefined },
+      { name, amount: amountInCents, category, paymentMethod: paymentMethod || undefined },
       scope
     );
     onOpenChange(false);

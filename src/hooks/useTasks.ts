@@ -14,7 +14,7 @@ export function useTasks() {
     id: t.id,
     title: t.title,
     status: t.status as TaskStatus,
-    tag: (t.tag as TaskTag) || undefined,
+    tag: t.tag || undefined,
     date: t.date,
     createdAt: t.created_at,
     pinned: t.pinned ?? false,

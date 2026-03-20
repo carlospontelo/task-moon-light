@@ -76,11 +76,11 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
     onSubmit({
       name,
       amount: amountInCents,
-      category: category as ExpenseCategory,
+      category,
       type: selectedType,
       installmentTotal: selectedType === 'installment' ? parseInt(installmentTotal) : undefined,
       startMonth,
-      paymentMethod: (paymentMethod || undefined) as PaymentMethod | undefined,
+      paymentMethod: paymentMethod || undefined,
     });
 
     resetForm();
