@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Expense, ExpenseCategory, PaymentMethod } from '@/types/expense';
+import { Expense } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
 import {
   Dialog,
