@@ -1,6 +1,6 @@
 /* @refresh reset */
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Expense, ExpenseType, ExpenseCategory, PaymentMethod, addMonths } from '@/types/expense';
+import { Expense, ExpenseType, addMonths } from '@/types/expense';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
