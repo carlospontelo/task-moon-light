@@ -3,10 +3,11 @@ import { useTasks } from '@/hooks/useTasks';
 import { useGoals } from '@/hooks/useGoals';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useAuth } from '@/contexts/AuthContext';
-import { TabNavigation } from '@/components/TabNavigation';
+import { TabNavigation, TabType } from '@/components/TabNavigation';
 import { TodoView } from '@/components/TodoView';
 import { GoalsView } from '@/components/goals/GoalsView';
 import { FinancesView } from '@/components/finances/FinancesView';
+import { DashboardView } from '@/components/dashboard/DashboardView';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { MigrationScreen, hasLocalData, isMigrationDone } from '@/components/auth/MigrationScreen';
 import { SettingsDialog, SettingsButton } from '@/components/settings/SettingsDialog';
@@ -26,7 +27,7 @@ const Index = () => {
     linkTask, unlinkTask, getLinkedTasks, getUnlinkedTasks, getActiveGoalsCount,
   } = useGoals(tasks);
 
-  const [activeTab, setActiveTab] = useState<'todo' | 'goals' | 'finances'>('todo');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (authLoading) {
@@ -104,6 +105,15 @@ const Index = () => {
         </div>
 
         <main>
+          {activeTab === 'dashboard' && (
+            <DashboardView
+              tasks={tasks}
+              goals={goals}
+              onUpdateTaskStatus={updateTaskStatus}
+              onNavigateToTasks={() => setActiveTab('todo')}
+              getCategoryBreakdown={getCategoryBreakdown}
+            />
+          )}
           {activeTab === 'todo' && (
             <TodoView
               tasks={tasks}
