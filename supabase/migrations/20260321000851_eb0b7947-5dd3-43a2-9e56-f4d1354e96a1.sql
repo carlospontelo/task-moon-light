@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks DROP CONSTRAINT tasks_tag_check;
