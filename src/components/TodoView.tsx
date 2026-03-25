@@ -146,7 +146,11 @@ export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTas
         task={editingTask}
         open={!!editingTask}
         onOpenChange={(open) => { if (!open) setEditingTask(null); }}
-        onSave={onUpdateTask}
+        onSave={(id, updates) => {
+          const { status, ...rest } = updates;
+          onUpdateTask(id, rest);
+          if (status) onUpdateStatus(id, status);
+        }}
       />
     </div>
   );
