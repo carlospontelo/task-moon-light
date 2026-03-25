@@ -43,11 +43,7 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
 
   const cycleStatus = () => {
     if (task.status === 'pending') {
-      if (inProgressCount >= 3) {
-        onUpdateStatus(task.id, 'completed');
-      } else {
-        onUpdateStatus(task.id, 'in_progress');
-      }
+      onUpdateStatus(task.id, 'in_progress');
     } else if (task.status === 'in_progress') {
       onUpdateStatus(task.id, 'completed');
     } else {
@@ -113,7 +109,7 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
 
       {/* Actions */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        {task.status === 'pending' && inProgressCount < 3 && (
+        {task.status === 'pending' && (
           <Button
             variant="ghost"
             size="icon"

@@ -8,14 +8,17 @@ import { CalendarIcon, Tag, Layers } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Task, BoardGroup, BOARD_GROUP_LABELS } from '@/types/task';
+import { Task, TaskStatus, BoardGroup, BOARD_GROUP_LABELS, STATUS_LABELS } from '@/types/task';
 import { useSettings } from '@/contexts/SettingsContext';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Circle, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface EditTaskDialogProps {
   task: Task | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => void;
+  onSave: (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup; status?: TaskStatus }) => void;
 }
 
 export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDialogProps) {
@@ -23,6 +26,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string | undefined>(undefined);
   const [boardGroup, setBoardGroup] = useState<BoardGroup>('today');
+  const [status, setStatus] = useState<TaskStatus>('pending');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
@@ -30,6 +34,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
     setDate(parseISO(task.date));
     setTag(task.tag);
     setBoardGroup(task.boardGroup);
+    setStatus(task.status);
     setInitialized(true);
   }
 
@@ -45,6 +50,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
       date: format(date, 'yyyy-MM-dd'),
       tag: tag || null,
       boardGroup,
+      status,
     });
     onOpenChange(false);
   };
@@ -112,6 +118,27 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          </div>
+
+          {/* Status selector */}
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground font-medium">Estado</label>
+            <RadioGroup value={status} onValueChange={(v) => setStatus(v as TaskStatus)} className="flex gap-2">
+              {([['pending', 'Não iniciada', Circle], ['in_progress', 'Em andamento', Loader2], ['completed', 'Concluída', CheckCircle2]] as const).map(([value, label, Icon]) => (
+                <Label
+                  key={value}
+                  htmlFor={`status-${value}`}
+                  className={cn(
+                    "flex items-center gap-1.5 cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all",
+                    status === value ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"
+                  )}
+                >
+                  <RadioGroupItem value={value} id={`status-${value}`} className="sr-only" />
+                  <Icon className={cn("h-3.5 w-3.5", value === 'in_progress' && status === value && "animate-spin")} />
+                  {label}
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
 
           {/* Board group selector */}
