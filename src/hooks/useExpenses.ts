@@ -202,8 +202,17 @@ export function useExpenses() {
     return expenses.filter((e) => e.month === month && e.type === type).reduce((sum, e) => sum + e.amount, 0);
   }, [expenses]);
 
+  const togglePaid = useCallback(async (expenseId: string) => {
+    const expense = expenses.find(e => e.id === expenseId);
+    if (!expense) return;
+    const realId = expenseId.includes('_virtual_') ? expenseId.split('_virtual_')[0] : expenseId;
+    // Optimistic update
+    setRawExpenses(prev => prev.map(e => e.id === realId ? { ...e, paid: !expense.paid } : e));
+    await supabase.from('expenses').update({ paid: !expense.paid } as any).eq('id', realId);
+  }, [expenses]);
+
   return {
-    expenses, addExpense, updateExpense, deleteExpense,
+    expenses, addExpense, updateExpense, deleteExpense, togglePaid,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
   };
 }
