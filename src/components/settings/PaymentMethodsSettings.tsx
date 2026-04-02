@@ -16,6 +16,15 @@ export function PaymentMethodsSettings() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editIcon, setEditIcon] = useState('');
+  const [editRequiresManual, setEditRequiresManual] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newLabel, setNewLabel] = useState('');
+  const [newIcon, setNewIcon] = useState('💰');
+  const [newRequiresManual, setNewRequiresManual] = useState(false);
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [editIcon, setEditIcon] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newIcon, setNewIcon] = useState('💰');
