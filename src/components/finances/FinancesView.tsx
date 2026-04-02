@@ -84,70 +84,85 @@ export function FinancesView({
         <MonthSummary total={total} breakdown={breakdown as any} />
       </div>
 
-      {/* Expense List */}
-      {hasExpenses ? (
-        <div className="space-y-4">
-          <ExpenseTypeGroup
-            type="fixed"
-            expenses={fixedExpenses}
-            total={getTypeTotal(selectedMonth, 'fixed')}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isReadOnly={isPastMonth}
-          />
-          <ExpenseTypeGroup
-            type="installment"
-            expenses={installmentExpenses}
-            total={getTypeTotal(selectedMonth, 'installment')}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isReadOnly={isPastMonth}
-          />
-          <ExpenseTypeGroup
-            type="single"
-            expenses={singleExpenses}
-            total={getTypeTotal(selectedMonth, 'single')}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            isReadOnly={isPastMonth}
-          />
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-secondary mx-auto mb-4">
-            <Receipt className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <p className="text-muted-foreground mb-1">
-            Nenhuma despesa em
-          </p>
-          <p className="font-medium text-foreground mb-4">
-            {monthLabel}
-          </p>
-          {!isPastMonth && (
-            <Button onClick={() => setFormOpen(true)} variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar despesa
-            </Button>
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Mobile: Payment methods on top */}
+        <div className="lg:hidden">
+          {hasExpenses && (
+            <div className="p-5 rounded-2xl bg-secondary/30 border border-border">
+              <PaymentMethodSummary expenses={allMonthExpenses} />
+            </div>
           )}
         </div>
-      )}
 
-      {/* Add Button */}
-      {hasExpenses && !isPastMonth && (
-        <div className="flex justify-center pt-4">
-          <Button onClick={() => setFormOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Adicionar despesa
-          </Button>
+        {/* Left: Expense list (~65%) */}
+        <div className="lg:col-span-3 space-y-4">
+          {hasExpenses ? (
+            <>
+              <ExpenseTypeGroup
+                type="fixed"
+                expenses={fixedExpenses}
+                total={getTypeTotal(selectedMonth, 'fixed')}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                isReadOnly={isPastMonth}
+              />
+              <ExpenseTypeGroup
+                type="installment"
+                expenses={installmentExpenses}
+                total={getTypeTotal(selectedMonth, 'installment')}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                isReadOnly={isPastMonth}
+              />
+              <ExpenseTypeGroup
+                type="single"
+                expenses={singleExpenses}
+                total={getTypeTotal(selectedMonth, 'single')}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                isReadOnly={isPastMonth}
+              />
+
+              {!isPastMonth && (
+                <div className="flex justify-center pt-4">
+                  <Button onClick={() => setFormOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Adicionar despesa
+                  </Button>
+                </div>
+              )}
+
+              {isFutureMonth && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Exibindo despesas comprometidas (fixas e parcelamentos)
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-secondary mx-auto mb-4">
+                <Receipt className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground mb-1">Nenhuma despesa em</p>
+              <p className="font-medium text-foreground mb-4">{monthLabel}</p>
+              {!isPastMonth && (
+                <Button onClick={() => setFormOpen(true)} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar despesa
+                </Button>
+              )}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Future month notice */}
-      {isFutureMonth && hasExpenses && (
-        <p className="text-center text-xs text-muted-foreground">
-          Exibindo despesas comprometidas (fixas e parcelamentos)
-        </p>
-      )}
+        {/* Right: Payment method summary (~35%), sticky on desktop */}
+        <div className="hidden lg:block lg:col-span-2">
+          <div className="sticky top-8 p-5 rounded-2xl bg-secondary/30 border border-border">
+            <PaymentMethodSummary expenses={allMonthExpenses} />
+          </div>
+        </div>
+      </div>
 
       {/* Dialogs */}
       <ExpenseForm
