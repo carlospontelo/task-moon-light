@@ -30,6 +30,7 @@ export function useExpenses() {
     fixedGroupId: e.fixed_group_id || undefined,
     month: e.month,
     paymentMethod: e.payment_method || undefined,
+    paid: e.paid ?? false,
     createdAt: new Date(e.created_at),
   });
 
