@@ -92,7 +92,7 @@ export function FinancesView({
         <div className="lg:hidden">
           {hasExpenses && (
             <div className="p-5 rounded-2xl bg-secondary/30 border border-border">
-              <PaymentMethodSummary expenses={allMonthExpenses} />
+              <PaymentMethodSummary expenses={allMonthExpenses} onTogglePaid={togglePaid} />
             </div>
           )}
         </div>
