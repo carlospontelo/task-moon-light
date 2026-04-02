@@ -207,6 +207,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (pmRes.data) {
       setPaymentMethods(pmRes.data.map((pm: any) => ({
         id: pm.id, key: pm.key, label: pm.label, icon: pm.icon,
+        requiresManualPayment: pm.requires_manual_payment ?? false,
       })));
     }
 
