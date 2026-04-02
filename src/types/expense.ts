@@ -17,6 +17,7 @@ export interface Expense {
   
   month: string; // "2024-12"
   paymentMethod?: string;
+  paid: boolean;
   createdAt: Date;
 }
 
