@@ -21,23 +21,21 @@ export function PaymentMethodsSettings() {
   const [newLabel, setNewLabel] = useState('');
   const [newIcon, setNewIcon] = useState('💰');
   const [newRequiresManual, setNewRequiresManual] = useState(false);
-  const { toast } = useToast();
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editLabel, setEditLabel] = useState('');
-  const [editIcon, setEditIcon] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
-  const [newLabel, setNewLabel] = useState('');
-  const [newIcon, setNewIcon] = useState('💰');
 
   const startEdit = (pm: CustomPaymentMethod) => {
     setEditingId(pm.id);
     setEditLabel(pm.label);
     setEditIcon(pm.icon);
+    setEditRequiresManual(pm.requiresManualPayment);
   };
 
   const saveEdit = async () => {
     if (!editingId || !editLabel.trim()) return;
-    await updatePaymentMethod(editingId, { label: editLabel.trim(), icon: editIcon });
+    await updatePaymentMethod(editingId, {
+      label: editLabel.trim(),
+      icon: editIcon,
+      requiresManualPayment: editRequiresManual,
+    });
     setEditingId(null);
     toast({ title: 'Forma de pagamento atualizada' });
   };
@@ -45,8 +43,14 @@ export function PaymentMethodsSettings() {
   const handleAdd = async () => {
     if (!newLabel.trim()) return;
     const key = newLabel.trim().toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    await addPaymentMethod({ key, label: newLabel.trim(), icon: newIcon });
+    await addPaymentMethod({
+      key,
+      label: newLabel.trim(),
+      icon: newIcon,
+      requiresManualPayment: newRequiresManual,
+    });
     setNewLabel('');
+    setNewRequiresManual(false);
     setIsAdding(false);
     toast({ title: 'Forma de pagamento criada' });
   };
@@ -54,6 +58,10 @@ export function PaymentMethodsSettings() {
   const handleDelete = async (id: string) => {
     await deletePaymentMethod(id);
     toast({ title: 'Forma de pagamento removida' });
+  };
+
+  const handleToggleManual = async (pm: CustomPaymentMethod) => {
+    await updatePaymentMethod(pm.id, { requiresManualPayment: !pm.requiresManualPayment });
   };
 
   return (
@@ -81,6 +89,10 @@ export function PaymentMethodsSettings() {
               ))}
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <Switch checked={newRequiresManual} onCheckedChange={setNewRequiresManual} id="new-manual" />
+            <Label htmlFor="new-manual" className="text-xs text-muted-foreground">Requer pagamento manual</Label>
+          </div>
           <div className="flex gap-2">
             <Button size="sm" onClick={handleAdd} className="gap-1"><Check className="h-3.5 w-3.5" /> Salvar</Button>
             <Button size="sm" variant="ghost" onClick={() => setIsAdding(false)}><X className="h-3.5 w-3.5" /></Button>
@@ -101,6 +113,10 @@ export function PaymentMethodsSettings() {
                         editIcon === ic ? "border-primary bg-primary/10" : "border-transparent hover:bg-secondary")}>{ic}</button>
                   ))}
                 </div>
+                <div className="flex items-center gap-2">
+                  <Switch checked={editRequiresManual} onCheckedChange={setEditRequiresManual} id="edit-manual" />
+                  <Label htmlFor="edit-manual" className="text-xs text-muted-foreground">Requer pagamento manual</Label>
+                </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={saveEdit} className="h-7 gap-1"><Check className="h-3 w-3" /> Salvar</Button>
                   <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-7"><X className="h-3 w-3" /></Button>
@@ -109,8 +125,18 @@ export function PaymentMethodsSettings() {
             ) : (
               <>
                 <span className="text-lg">{pm.icon}</span>
-                <span className="text-sm font-medium text-foreground">{pm.label}</span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">{pm.label}</span>
+                  {pm.requiresManualPayment && (
+                    <span className="text-[10px] text-muted-foreground">Pagamento manual</span>
+                  )}
+                </div>
                 <div className="flex-1" />
+                <Switch
+                  checked={pm.requiresManualPayment}
+                  onCheckedChange={() => handleToggleManual(pm)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity data-[state=checked]:opacity-100"
+                />
                 <Button variant="ghost" size="icon-sm" onClick={() => startEdit(pm)}
                   className="opacity-0 group-hover:opacity-100 transition-opacity">
                   <Pencil className="h-3.5 w-3.5" />
