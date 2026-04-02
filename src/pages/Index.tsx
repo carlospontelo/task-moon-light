@@ -131,7 +131,7 @@ const Index = () => {
           )}
           {activeTab === 'finances' && (
             <FinancesView expenses={expenses} addExpense={addExpense} updateExpense={updateExpense}
-              deleteExpense={deleteExpense} getExpensesByMonthAndType={getExpensesByMonthAndType}
+              deleteExpense={deleteExpense} togglePaid={togglePaid} getExpensesByMonthAndType={getExpensesByMonthAndType}
               getCategoryBreakdown={getCategoryBreakdown} getTypeTotal={getTypeTotal} />
           )}
         </main>
