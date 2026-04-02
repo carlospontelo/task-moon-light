@@ -8,6 +8,7 @@ import { ExpenseEditDialog } from './ExpenseEditDialog';
 import { ExpenseDeleteDialog } from './ExpenseDeleteDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Receipt } from 'lucide-react';
+import { PaymentMethodSummary } from './PaymentMethodSummary';
 
 interface FinancesViewProps {
   expenses: Expense[];
