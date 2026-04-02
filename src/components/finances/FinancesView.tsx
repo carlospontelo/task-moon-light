@@ -161,7 +161,7 @@ export function FinancesView({
         {/* Right: Payment method summary (~35%), sticky on desktop */}
         <div className="hidden lg:block lg:col-span-2">
           <div className="sticky top-8 p-5 rounded-2xl bg-secondary/30 border border-border">
-            <PaymentMethodSummary expenses={allMonthExpenses} />
+            <PaymentMethodSummary expenses={allMonthExpenses} onTogglePaid={togglePaid} />
           </div>
         </div>
       </div>
