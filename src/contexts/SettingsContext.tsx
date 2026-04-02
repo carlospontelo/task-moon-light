@@ -163,6 +163,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           key: pm.key,
           label: pm.label,
           icon: pm.icon,
+          requires_manual_payment: pm.requiresManualPayment,
         }))
       );
     }
