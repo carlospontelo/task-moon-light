@@ -294,6 +294,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     await supabase.from('custom_payment_methods').insert({
       user_id: user.id, key: pm.key, label: pm.label, icon: pm.icon,
+      requires_manual_payment: pm.requiresManualPayment ?? false,
     });
     await fetchAll();
   };
