@@ -19,7 +19,7 @@ const Index = () => {
   const [migrationDone, setMigrationDone] = useState(false);
   const { tasks, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask } = useTasks();
   const {
-    expenses, addExpense, updateExpense, deleteExpense,
+    expenses, addExpense, updateExpense, deleteExpense, togglePaid,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
   } = useExpenses();
   const {
@@ -131,7 +131,7 @@ const Index = () => {
           )}
           {activeTab === 'finances' && (
             <FinancesView expenses={expenses} addExpense={addExpense} updateExpense={updateExpense}
-              deleteExpense={deleteExpense} getExpensesByMonthAndType={getExpensesByMonthAndType}
+              deleteExpense={deleteExpense} togglePaid={togglePaid} getExpensesByMonthAndType={getExpensesByMonthAndType}
               getCategoryBreakdown={getCategoryBreakdown} getTypeTotal={getTypeTotal} />
           )}
         </main>

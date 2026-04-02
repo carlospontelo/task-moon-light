@@ -25,6 +25,7 @@ export interface CustomPaymentMethod {
   key: string;
   label: string;
   icon: string;
+  requiresManualPayment: boolean;
 }
 
 export interface UserPreferences {
@@ -56,10 +57,10 @@ const DEFAULT_CATEGORIES: Omit<CustomCategory, 'id'>[] = [
 ];
 
 const DEFAULT_PAYMENT_METHODS: Omit<CustomPaymentMethod, 'id'>[] = [
-  { key: 'credit', label: 'Crédito', icon: '💳' },
-  { key: 'debit', label: 'Débito', icon: '🏧' },
-  { key: 'pix', label: 'Pix', icon: '⚡' },
-  { key: 'cash_reserve', label: 'Caixinha', icon: '🐷' },
+  { key: 'credit', label: 'Crédito', icon: '💳', requiresManualPayment: false },
+  { key: 'debit', label: 'Débito', icon: '🏧', requiresManualPayment: false },
+  { key: 'pix', label: 'Pix', icon: '⚡', requiresManualPayment: true },
+  { key: 'cash_reserve', label: 'Caixinha', icon: '🐷', requiresManualPayment: true },
 ];
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -162,6 +163,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           key: pm.key,
           label: pm.label,
           icon: pm.icon,
+          requires_manual_payment: pm.requiresManualPayment,
         }))
       );
     }
@@ -205,6 +207,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (pmRes.data) {
       setPaymentMethods(pmRes.data.map((pm: any) => ({
         id: pm.id, key: pm.key, label: pm.label, icon: pm.icon,
+        requiresManualPayment: pm.requires_manual_payment ?? false,
       })));
     }
 
@@ -291,6 +294,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     await supabase.from('custom_payment_methods').insert({
       user_id: user.id, key: pm.key, label: pm.label, icon: pm.icon,
+      requires_manual_payment: pm.requiresManualPayment ?? false,
     });
     await fetchAll();
   };
@@ -300,6 +304,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (data.key !== undefined) dbData.key = data.key;
     if (data.label !== undefined) dbData.label = data.label;
     if (data.icon !== undefined) dbData.icon = data.icon;
+    if (data.requiresManualPayment !== undefined) dbData.requires_manual_payment = data.requiresManualPayment;
     await supabase.from('custom_payment_methods').update(dbData).eq('id', id);
     await fetchAll();
   };
