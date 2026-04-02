@@ -304,6 +304,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     if (data.key !== undefined) dbData.key = data.key;
     if (data.label !== undefined) dbData.label = data.label;
     if (data.icon !== undefined) dbData.icon = data.icon;
+    if (data.requiresManualPayment !== undefined) dbData.requires_manual_payment = data.requiresManualPayment;
     await supabase.from('custom_payment_methods').update(dbData).eq('id', id);
     await fetchAll();
   };
