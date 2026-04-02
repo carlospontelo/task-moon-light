@@ -25,6 +25,7 @@ export interface CustomPaymentMethod {
   key: string;
   label: string;
   icon: string;
+  requiresManualPayment: boolean;
 }
 
 export interface UserPreferences {
