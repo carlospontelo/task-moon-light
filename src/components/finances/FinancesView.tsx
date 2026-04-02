@@ -39,6 +39,7 @@ export function FinancesView({
   addExpense,
   updateExpense,
   deleteExpense,
+  togglePaid,
   getExpensesByMonthAndType,
   getCategoryBreakdown,
   getTypeTotal,
