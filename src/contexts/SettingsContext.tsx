@@ -57,10 +57,10 @@ const DEFAULT_CATEGORIES: Omit<CustomCategory, 'id'>[] = [
 ];
 
 const DEFAULT_PAYMENT_METHODS: Omit<CustomPaymentMethod, 'id'>[] = [
-  { key: 'credit', label: 'Crédito', icon: '💳' },
-  { key: 'debit', label: 'Débito', icon: '🏧' },
-  { key: 'pix', label: 'Pix', icon: '⚡' },
-  { key: 'cash_reserve', label: 'Caixinha', icon: '🐷' },
+  { key: 'credit', label: 'Crédito', icon: '💳', requiresManualPayment: false },
+  { key: 'debit', label: 'Débito', icon: '🏧', requiresManualPayment: false },
+  { key: 'pix', label: 'Pix', icon: '⚡', requiresManualPayment: true },
+  { key: 'cash_reserve', label: 'Caixinha', icon: '🐷', requiresManualPayment: true },
 ];
 
 const DEFAULT_PREFERENCES: UserPreferences = {
