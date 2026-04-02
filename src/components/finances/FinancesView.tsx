@@ -55,8 +55,9 @@ export function FinancesView({
   const fixedExpenses = getExpensesByMonthAndType(selectedMonth, 'fixed');
   const installmentExpenses = getExpensesByMonthAndType(selectedMonth, 'installment');
   const singleExpenses = getExpensesByMonthAndType(selectedMonth, 'single');
+  const allMonthExpenses = [...fixedExpenses, ...installmentExpenses, ...singleExpenses];
 
-  const hasExpenses = fixedExpenses.length > 0 || installmentExpenses.length > 0 || singleExpenses.length > 0;
+  const hasExpenses = allMonthExpenses.length > 0;
 
   const handleEdit = (expense: Expense) => {
     setEditingExpense(expense);
