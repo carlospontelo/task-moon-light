@@ -1,0 +1,2 @@
+ALTER TABLE public.custom_payment_methods ADD COLUMN IF NOT EXISTS requires_manual_payment BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS paid BOOLEAN NOT NULL DEFAULT false;

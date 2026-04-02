@@ -84,6 +84,7 @@ export type Database = {
           id: string
           key: string
           label: string
+          requires_manual_payment: boolean
           user_id: string
         }
         Insert: {
@@ -92,6 +93,7 @@ export type Database = {
           id?: string
           key: string
           label: string
+          requires_manual_payment?: boolean
           user_id: string
         }
         Update: {
@@ -100,6 +102,7 @@ export type Database = {
           id?: string
           key?: string
           label?: string
+          requires_manual_payment?: boolean
           user_id?: string
         }
         Relationships: []
@@ -149,6 +152,7 @@ export type Database = {
           installment_total: number | null
           month: string
           name: string
+          paid: boolean
           payment_method: string | null
           type: string
           user_id: string
@@ -164,6 +168,7 @@ export type Database = {
           installment_total?: number | null
           month: string
           name: string
+          paid?: boolean
           payment_method?: string | null
           type: string
           user_id: string
@@ -179,6 +184,7 @@ export type Database = {
           installment_total?: number | null
           month?: string
           name?: string
+          paid?: boolean
           payment_method?: string | null
           type?: string
           user_id?: string
