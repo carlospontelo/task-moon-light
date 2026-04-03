@@ -25,13 +25,6 @@ export function TaskColumn({ group, tasks, onUpdateStatus, onDelete, onEdit, inP
   const { setNodeRef, isOver } = useDroppable({ id: group });
   const config = GROUP_CONFIG[group];
 
-  // Sort: in_progress first
-  const sorted = [...tasks].sort((a, b) => {
-    if (a.status === 'in_progress' && b.status !== 'in_progress') return -1;
-    if (a.status !== 'in_progress' && b.status === 'in_progress') return 1;
-    return 0;
-  });
-
   return (
     <div
       ref={setNodeRef}
@@ -50,9 +43,9 @@ export function TaskColumn({ group, tasks, onUpdateStatus, onDelete, onEdit, inP
         </span>
       </div>
 
-      <SortableContext items={sorted.map(t => t.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
         <div className="space-y-1 flex-1">
-          {sorted.map((task) => (
+          {tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}

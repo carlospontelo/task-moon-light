@@ -122,6 +122,7 @@ const Index = () => {
               onUpdateTask={updateTask}
               onMoveTask={moveTask}
               onDelete={deleteTask}
+              onReorderTasks={reorderTasks}
             />
           )}
           {activeTab === 'goals' && (
