@@ -308,6 +308,7 @@ export type Database = {
           date: string
           id: string
           pinned: boolean
+          sort_order: number
           status: string
           tag: string | null
           title: string
@@ -319,6 +320,7 @@ export type Database = {
           date: string
           id?: string
           pinned?: boolean
+          sort_order?: number
           status?: string
           tag?: string | null
           title: string
@@ -330,6 +332,7 @@ export type Database = {
           date?: string
           id?: string
           pinned?: boolean
+          sort_order?: number
           status?: string
           tag?: string | null
           title?: string
