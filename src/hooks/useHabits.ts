@@ -118,8 +118,22 @@ export function useHabits() {
     return new Date(year, m, 0).getDate();
   }, []);
 
+  const reorderHabits = useCallback(async (reordered: { id: string; sortOrder: number }[]) => {
+    setHabits(prev => {
+      const updated = [...prev];
+      for (const r of reordered) {
+        const idx = updated.findIndex(h => h.id === r.id);
+        if (idx !== -1) updated[idx] = { ...updated[idx], sortOrder: r.sortOrder };
+      }
+      return updated.sort((a, b) => a.sortOrder - b.sortOrder);
+    });
+    for (const r of reordered) {
+      await supabase.from('habits').update({ sort_order: r.sortOrder }).eq('id', r.id);
+    }
+  }, []);
+
   return {
     habits, entries, addHabit, deleteHabit, toggleEntry, isCompleted,
-    getDailyCompletionRates, getDaysInMonth,
+    getDailyCompletionRates, getDaysInMonth, reorderHabits,
   };
 }
