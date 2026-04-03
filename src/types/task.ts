@@ -24,4 +24,5 @@ export interface Task {
   createdAt: string;
   pinned: boolean;
   boardGroup: BoardGroup;
+  sortOrder: number;
 }

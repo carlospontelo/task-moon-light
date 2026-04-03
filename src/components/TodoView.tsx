@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { DndContext, DragEndEvent, DragOverEvent, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskStatus, BoardGroup } from '@/types/task';
 import { TaskColumn } from './TaskColumn';
 import { TaskCard } from './TaskCard';
@@ -13,11 +14,12 @@ interface TodoViewProps {
   onUpdateTask: (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => void;
   onMoveTask: (id: string, group: BoardGroup) => void;
   onDelete: (id: string) => void;
+  onReorderTasks: (reordered: { id: string; sortOrder: number }[]) => void;
 }
 
 const GROUPS: BoardGroup[] = ['pinned', 'today', 'this_week', 'standby'];
 
-export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete }: TodoViewProps) {
+export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete, onReorderTasks }: TodoViewProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -35,6 +37,10 @@ export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTas
       const group = task.boardGroup || 'today';
       if (groups[group]) groups[group].push(task);
     });
+    // Sort each group by sortOrder
+    for (const key of Object.keys(groups) as BoardGroup[]) {
+      groups[key].sort((a, b) => a.sortOrder - b.sortOrder);
+    }
     return groups;
   }, [activeTasks]);
 
@@ -51,22 +57,34 @@ export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTas
 
     const taskId = active.id as string;
     const overId = over.id as string;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
 
-    // Check if dropped on a column
+    // Dropped on a column header
     if (GROUPS.includes(overId as BoardGroup)) {
-      const task = tasks.find(t => t.id === taskId);
-      if (task && task.boardGroup !== overId) {
+      if (task.boardGroup !== overId) {
         onMoveTask(taskId, overId as BoardGroup);
       }
       return;
     }
 
-    // Dropped on another task — find which column that task belongs to
+    // Dropped on another task
     const overTask = tasks.find(t => t.id === overId);
-    if (overTask) {
-      const task = tasks.find(t => t.id === taskId);
-      if (task && task.boardGroup !== overTask.boardGroup) {
-        onMoveTask(taskId, overTask.boardGroup);
+    if (!overTask) return;
+
+    if (task.boardGroup !== overTask.boardGroup) {
+      // Move to different column
+      onMoveTask(taskId, overTask.boardGroup);
+    } else {
+      // Reorder within same column
+      const group = task.boardGroup;
+      const groupTasks = [...tasksByGroup[group]];
+      const oldIndex = groupTasks.findIndex(t => t.id === taskId);
+      const newIndex = groupTasks.findIndex(t => t.id === overId);
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        const reordered = arrayMove(groupTasks, oldIndex, newIndex);
+        const updates = reordered.map((t, i) => ({ id: t.id, sortOrder: i }));
+        onReorderTasks(updates);
       }
     }
   };

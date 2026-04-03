@@ -1,19 +1,90 @@
 import { useState, useMemo } from 'react';
-import { useHabits } from '@/hooks/useHabits';
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { arrayMove } from '@dnd-kit/sortable';
+import { useHabits, Habit } from '@/hooks/useHabits';
 import { getCurrentMonth, getMonthLabel, addMonths } from '@/types/expense';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
+interface SortableHabitRowProps {
+  habit: Habit;
+  daysInMonth: number;
+  yearStr: string;
+  monthStr: string;
+  today: string;
+  isCompleted: (habitId: string, date: string) => boolean;
+  toggleEntry: (habitId: string, date: string) => void;
+  deleteHabit: (id: string) => void;
+}
+
+function SortableHabitRow({ habit, daysInMonth, yearStr, monthStr, today, isCompleted, toggleEntry, deleteHabit }: SortableHabitRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} className={cn("group border-t border-border/50", isDragging && "opacity-50 bg-primary/5")}>
+      <td className="py-1.5 px-2 sticky left-0 bg-card">
+        <div className="flex items-center gap-1.5">
+          <button
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors touch-none"
+          >
+            <GripVertical className="h-3 w-3" />
+          </button>
+          <span className="truncate text-foreground text-xs">{habit.name}</span>
+          <button
+            onClick={() => deleteHabit(habit.id)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      </td>
+      {Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1;
+        const dateStr = `${yearStr}-${monthStr}-${String(day).padStart(2, '0')}`;
+        const done = isCompleted(habit.id, dateStr);
+        const isToday = dateStr === today;
+        return (
+          <td key={i} className="text-center py-1.5 px-0.5">
+            <button
+              onClick={() => toggleEntry(habit.id, dateStr)}
+              className={cn(
+                "w-5 h-5 rounded-sm transition-all duration-200 border",
+                done
+                  ? "bg-primary/80 border-primary shadow-[0_0_6px_hsl(190_95%_55%_/_0.3)]"
+                  : "border-border/50 hover:border-primary/40",
+                isToday && !done && "border-primary/30"
+              )}
+            />
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
 export function DashboardHabitsBlock() {
-  const { habits, addHabit, deleteHabit, toggleEntry, isCompleted, getDailyCompletionRates, getDaysInMonth } = useHabits();
+  const { habits, addHabit, deleteHabit, toggleEntry, isCompleted, getDailyCompletionRates, getDaysInMonth, reorderHabits } = useHabits();
   const [month, setMonth] = useState(getCurrentMonth());
   const [newHabit, setNewHabit] = useState('');
   const label = getMonthLabel(month);
   const daysInMonth = getDaysInMonth(month);
   const chartData = getDailyCompletionRates(month);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
 
   const today = useMemo(() => {
     const now = new Date();
@@ -24,6 +95,19 @@ export function DashboardHabitsBlock() {
     if (newHabit.trim()) {
       addHabit(newHabit.trim());
       setNewHabit('');
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = habits.findIndex(h => h.id === active.id);
+    const newIndex = habits.findIndex(h => h.id === over.id);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(habits, oldIndex, newIndex);
+      const updates = reordered.map((h, i) => ({ id: h.id, sortOrder: i }));
+      reorderHabits(updates);
     }
   };
 
@@ -85,59 +169,41 @@ export function DashboardHabitsBlock() {
 
       {/* Habit tracker table */}
       {habits.length > 0 && (
-        <div className="overflow-x-auto -mx-1">
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr>
-                <th className="text-left text-muted-foreground font-medium py-2 px-2 sticky left-0 bg-card min-w-[120px]">
-                  Hábito
-                </th>
-                {Array.from({ length: daysInMonth }, (_, i) => (
-                  <th key={i} className="text-center text-muted-foreground font-normal py-2 px-0.5 min-w-[28px]">
-                    {i + 1}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left text-muted-foreground font-medium py-2 px-2 sticky left-0 bg-card min-w-[120px]">
+                    Hábito
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {habits.map(habit => (
-                <tr key={habit.id} className="group border-t border-border/50">
-                  <td className="py-1.5 px-2 sticky left-0 bg-card">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate text-foreground">{habit.name}</span>
-                      <button
-                        onClick={() => deleteHabit(habit.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </td>
-                  {Array.from({ length: daysInMonth }, (_, i) => {
-                    const day = i + 1;
-                    const dateStr = `${yearStr}-${monthStr}-${String(day).padStart(2, '0')}`;
-                    const done = isCompleted(habit.id, dateStr);
-                    const isToday = dateStr === today;
-                    return (
-                      <td key={i} className="text-center py-1.5 px-0.5">
-                        <button
-                          onClick={() => toggleEntry(habit.id, dateStr)}
-                          className={cn(
-                            "w-5 h-5 rounded-sm transition-all duration-200 border",
-                            done
-                              ? "bg-primary/80 border-primary shadow-[0_0_6px_hsl(190_95%_55%_/_0.3)]"
-                              : "border-border/50 hover:border-primary/40",
-                            isToday && !done && "border-primary/30"
-                          )}
-                        />
-                      </td>
-                    );
-                  })}
+                  {Array.from({ length: daysInMonth }, (_, i) => (
+                    <th key={i} className="text-center text-muted-foreground font-normal py-2 px-0.5 min-w-[28px]">
+                      {i + 1}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <SortableContext items={habits.map(h => h.id)} strategy={verticalListSortingStrategy}>
+                <tbody>
+                  {habits.map(habit => (
+                    <SortableHabitRow
+                      key={habit.id}
+                      habit={habit}
+                      daysInMonth={daysInMonth}
+                      yearStr={yearStr}
+                      monthStr={monthStr}
+                      today={today}
+                      isCompleted={isCompleted}
+                      toggleEntry={toggleEntry}
+                      deleteHabit={deleteHabit}
+                    />
+                  ))}
+                </tbody>
+              </SortableContext>
+            </table>
+          </div>
+        </DndContext>
       )}
 
       {habits.length === 0 && (
