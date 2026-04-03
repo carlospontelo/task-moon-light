@@ -121,5 +121,21 @@ export function useTasks() {
 
   const getTasksByDate = (date: string) => tasks.filter((t) => t.date === date);
 
-  return { tasks, loading, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, getTasksByDate };
+  const reorderTasks = async (reorderedTasks: { id: string; sortOrder: number }[]) => {
+    // Optimistic update
+    setTasks(prev => {
+      const updated = [...prev];
+      for (const rt of reorderedTasks) {
+        const idx = updated.findIndex(t => t.id === rt.id);
+        if (idx !== -1) updated[idx] = { ...updated[idx], sortOrder: rt.sortOrder };
+      }
+      return updated;
+    });
+    // Persist
+    for (const rt of reorderedTasks) {
+      await supabase.from('tasks').update({ sort_order: rt.sortOrder }).eq('id', rt.id);
+    }
+  };
+
+  return { tasks, loading, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, getTasksByDate, reorderTasks };
 }
