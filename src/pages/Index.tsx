@@ -17,7 +17,7 @@ const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const [showMigration, setShowMigration] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
-  const { tasks, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask } = useTasks();
+  const { tasks, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, reorderTasks } = useTasks();
   const {
     expenses, addExpense, updateExpense, deleteExpense, togglePaid,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
