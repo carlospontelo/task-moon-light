@@ -44,6 +44,7 @@ export function useTasks() {
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (!error && data) setTasks(data.map(mapRow));
