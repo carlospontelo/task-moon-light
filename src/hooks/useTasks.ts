@@ -19,6 +19,7 @@ export function useTasks() {
     createdAt: t.created_at,
     pinned: t.pinned ?? false,
     boardGroup: (t.board_group as BoardGroup) || 'today',
+    sortOrder: t.sort_order ?? 0,
   });
 
   // Auto-cleanup: delete completed tasks from previous days
