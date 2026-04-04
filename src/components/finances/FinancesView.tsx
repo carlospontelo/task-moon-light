@@ -83,7 +83,7 @@ export function FinancesView({
 
       {/* Month Summary */}
       <div className="p-6 rounded-2xl bg-secondary/30 border border-border">
-        <MonthSummary total={total} breakdown={breakdown as any} />
+        <MonthSummary selectedMonth={selectedMonth} getCategoryBreakdown={getCategoryBreakdown} />
       </div>
 
       {/* Two-column layout */}
