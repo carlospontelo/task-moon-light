@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-
-const ICONS = ['💳', '🏧', '⚡', '🐷', '💰', '🏦', '💵', '🪙', '📱', '🔄'];
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 
 export function PaymentMethodsSettings() {
   const { paymentMethods, addPaymentMethod, updatePaymentMethod, deletePaymentMethod } = useSettings();
@@ -21,6 +21,8 @@ export function PaymentMethodsSettings() {
   const [newLabel, setNewLabel] = useState('');
   const [newIcon, setNewIcon] = useState('💰');
   const [newRequiresManual, setNewRequiresManual] = useState(false);
+  const [newEmojiOpen, setNewEmojiOpen] = useState(false);
+  const [editEmojiOpen, setEditEmojiOpen] = useState(false);
 
   const startEdit = (pm: CustomPaymentMethod) => {
     setEditingId(pm.id);
@@ -81,13 +83,26 @@ export function PaymentMethodsSettings() {
           <Input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Nome do método" className="h-9" />
           <div>
             <p className="text-xs text-muted-foreground mb-1.5">Ícone</p>
-            <div className="flex flex-wrap gap-1.5">
-              {ICONS.map(ic => (
-                <button key={ic} onClick={() => setNewIcon(ic)}
-                  className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-sm border transition-all",
-                    newIcon === ic ? "border-primary bg-primary/10" : "border-transparent hover:bg-secondary")}>{ic}</button>
-              ))}
-            </div>
+            <Popover open={newEmojiOpen} onOpenChange={setNewEmojiOpen}>
+              <PopoverTrigger asChild>
+                <button className="w-10 h-10 rounded-lg border border-border flex items-center justify-center text-xl hover:bg-secondary transition-colors">
+                  {newIcon}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border-0" align="start">
+                <EmojiPicker
+                  theme={Theme.DARK}
+                  searchPlaceholder="Buscar emoji..."
+                  width={300}
+                  height={400}
+                  lazyLoadEmojis
+                  onEmojiClick={(emojiData) => {
+                    setNewIcon(emojiData.emoji);
+                    setNewEmojiOpen(false);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex items-center gap-2">
             <Switch checked={newRequiresManual} onCheckedChange={setNewRequiresManual} id="new-manual" />
@@ -106,12 +121,28 @@ export function PaymentMethodsSettings() {
             {editingId === pm.id ? (
               <div className="flex-1 space-y-2">
                 <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="h-8" />
-                <div className="flex flex-wrap gap-1.5">
-                  {ICONS.map(ic => (
-                    <button key={ic} onClick={() => setEditIcon(ic)}
-                      className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-sm border transition-all",
-                        editIcon === ic ? "border-primary bg-primary/10" : "border-transparent hover:bg-secondary")}>{ic}</button>
-                  ))}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Ícone</p>
+                  <Popover open={editEmojiOpen} onOpenChange={setEditEmojiOpen}>
+                    <PopoverTrigger asChild>
+                      <button className="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-lg hover:bg-secondary transition-colors">
+                        {editIcon}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 border-0" align="start">
+                      <EmojiPicker
+                        theme={Theme.DARK}
+                        searchPlaceholder="Buscar emoji..."
+                        width={300}
+                        height={400}
+                        lazyLoadEmojis
+                        onEmojiClick={(emojiData) => {
+                          setEditIcon(emojiData.emoji);
+                          setEditEmojiOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={editRequiresManual} onCheckedChange={setEditRequiresManual} id="edit-manual" />
