@@ -1,12 +1,13 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
-import { Trash2, Calendar, Circle, Loader2, CheckCircle2, Play, Pencil } from 'lucide-react';
+import { Trash2, Calendar, Circle, Loader2, CheckCircle2, Play, Pencil, ListChecks } from 'lucide-react';
 import { Task, TaskStatus } from '@/types/task';
 import { useSettings } from '@/contexts/SettingsContext';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useSubtasks } from '@/hooks/useSubtasks';
 
 interface TaskCardProps {
   task: Task;
@@ -24,8 +25,10 @@ const STATUS_ICON: Record<TaskStatus, React.ReactNode> = {
 
 export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCount }: TaskCardProps) {
   const { getTagByKey } = useSettings();
+  const { getSubtaskProgress } = useSubtasks();
   const tag = task.tag ? getTagByKey(task.tag) : undefined;
   const isInProgress = task.status === 'in_progress';
+  const progress = getSubtaskProgress(task.id);
 
   const {
     attributes,
@@ -102,6 +105,15 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
               tag.textColor
             )}>
               {tag.label}
+            </span>
+          )}
+          {progress.total > 0 && (
+            <span className={cn(
+              "flex items-center gap-1 text-[11px]",
+              progress.completed === progress.total ? "text-emerald-400" : "text-muted-foreground"
+            )}>
+              <ListChecks className="h-3 w-3" />
+              {progress.completed}/{progress.total}
             </span>
           )}
         </div>
