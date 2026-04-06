@@ -7,7 +7,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useSubtasks } from '@/hooks/useSubtasks';
+import { useSubtasksContext } from '@/contexts/SubtasksContext';
 
 interface TaskCardProps {
   task: Task;
