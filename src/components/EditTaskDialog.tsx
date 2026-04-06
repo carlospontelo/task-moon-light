@@ -88,7 +88,7 @@ function SortableSubtaskItem({ subtask, onToggle, onDelete }: { subtask: Subtask
 
 export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDialogProps) {
   const { tags } = useSettings();
-  const { getSubtasksByTaskId, getSubtaskProgress, addSubtask, toggleSubtask, deleteSubtask, reorderSubtasks } = useSubtasks();
+  const { getSubtasksByTaskId, getSubtaskProgress, addSubtask, toggleSubtask, deleteSubtask, reorderSubtasks } = useSubtasksContext();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string | undefined>(undefined);
   const [boardGroup, setBoardGroup] = useState<BoardGroup>('today');

@@ -25,7 +25,7 @@ const STATUS_ICON: Record<TaskStatus, React.ReactNode> = {
 
 export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCount }: TaskCardProps) {
   const { getTagByKey } = useSettings();
-  const { getSubtaskProgress } = useSubtasks();
+  const { getSubtaskProgress } = useSubtasksContext();
   const tag = task.tag ? getTagByKey(task.tag) : undefined;
   const isInProgress = task.status === 'in_progress';
   const progress = getSubtaskProgress(task.id);
