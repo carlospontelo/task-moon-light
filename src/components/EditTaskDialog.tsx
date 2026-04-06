@@ -16,7 +16,7 @@ import { Circle, Loader2, CheckCircle2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
-import { useSubtasks } from '@/hooks/useSubtasks';
+import { useSubtasksContext } from '@/contexts/SubtasksContext';
 import {
   DndContext,
   closestCenter,
