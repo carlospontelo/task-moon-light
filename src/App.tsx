@@ -26,6 +26,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </SubtasksProvider>
       </SettingsProvider>
     </AuthProvider>
   </QueryClientProvider>
