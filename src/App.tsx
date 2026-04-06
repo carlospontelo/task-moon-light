@@ -15,6 +15,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <SettingsProvider>
+        <SubtasksProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
