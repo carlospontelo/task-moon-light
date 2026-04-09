@@ -14,6 +14,7 @@ interface PaymentMethodSummaryProps {
 
 export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSummaryProps) {
   const { getPaymentMethodByKey } = useSettings();
+  const [detailMethod, setDetailMethod] = useState<{ key: string; expenses: Expense[] } | null>(null);
 
   const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
 
