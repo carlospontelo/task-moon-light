@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Expense, formatCurrency } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, ChevronRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { PaymentMethodDetailDialog } from './PaymentMethodDetailDialog';
 
 interface PaymentMethodSummaryProps {
   expenses: Expense[];
