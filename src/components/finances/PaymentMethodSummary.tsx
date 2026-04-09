@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Expense, formatCurrency } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, ChevronRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { PaymentMethodDetailDialog } from './PaymentMethodDetailDialog';
 
 interface PaymentMethodSummaryProps {
   expenses: Expense[];
@@ -12,6 +14,7 @@ interface PaymentMethodSummaryProps {
 
 export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSummaryProps) {
   const { getPaymentMethodByKey } = useSettings();
+  const [detailMethod, setDetailMethod] = useState<{ key: string; expenses: Expense[] } | null>(null);
 
   const totalAmount = expenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -115,9 +118,29 @@ export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSu
                 ))}
               </div>
             )}
+
+            {!requiresManual && (
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={() => setDetailMethod({ key, expenses: methodExpenses })}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                >
+                  Ver detalhes
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
+
+      <PaymentMethodDetailDialog
+        open={!!detailMethod}
+        onOpenChange={(open) => !open && setDetailMethod(null)}
+        methodKey={detailMethod?.key || ''}
+        expenses={detailMethod?.expenses || []}
+        totalMonth={totalAmount}
+      />
     </div>
   );
 }
