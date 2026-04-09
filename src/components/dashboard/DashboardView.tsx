@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Task } from '@/types/task';
 import { Goal } from '@/types/goal';
 import { DashboardTasksBlock } from './DashboardTasksBlock';
@@ -13,7 +14,7 @@ interface Props {
   getCategoryBreakdown: (month: string) => { breakdown: Record<string, { amount: number; percentage: number }>; total: number };
 }
 
-export function DashboardView({ tasks, goals, onUpdateTaskStatus, onNavigateToTasks, getCategoryBreakdown }: Props) {
+export const DashboardView = memo(function DashboardView({ tasks, goals, onUpdateTaskStatus, onNavigateToTasks, getCategoryBreakdown }: Props) {
   return (
     <div className="space-y-4">
       {/* Row 1: Tasks + Finances (main blocks) */}
@@ -41,4 +42,4 @@ export function DashboardView({ tasks, goals, onUpdateTaskStatus, onNavigateToTa
       </div>
     </div>
   );
-}
+});

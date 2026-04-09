@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, memo } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskStatus, BoardGroup } from '@/types/task';
@@ -19,7 +19,7 @@ interface TodoViewProps {
 
 const GROUPS: BoardGroup[] = ['pinned', 'today', 'this_week', 'standby'];
 
-export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete, onReorderTasks }: TodoViewProps) {
+export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete, onReorderTasks }: TodoViewProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -172,4 +172,4 @@ export function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTas
       />
     </div>
   );
-}
+});

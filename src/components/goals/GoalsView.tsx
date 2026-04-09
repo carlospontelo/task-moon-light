@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Goal, GoalStatus, getCurrentQuarter, MAX_ACTIVE_GOALS } from '@/types/goal';
 import { Task } from '@/types/task';
 import { QuarterSelector } from './QuarterSelector';
@@ -40,7 +40,7 @@ interface GoalsViewProps {
   getActiveGoalsCount: (quarter: string) => number;
 }
 
-export function GoalsView({
+export const GoalsView = memo(function GoalsView({
   goals,
   tasks,
   addGoal,
@@ -253,4 +253,4 @@ export function GoalsView({
       </AlertDialog>
     </div>
   );
-}
+});

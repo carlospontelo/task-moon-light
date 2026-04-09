@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Expense, ExpenseType, getCurrentMonth, getMonthLabel } from '@/types/expense';
 import { MonthNavigator } from './MonthNavigator';
 import { MonthSummary } from './MonthSummary';
@@ -35,7 +35,7 @@ interface FinancesViewProps {
   getTypeTotal: (month: string, type: ExpenseType) => number;
 }
 
-export function FinancesView({
+export const FinancesView = memo(function FinancesView({
   addExpense,
   updateExpense,
   deleteExpense,
@@ -189,4 +189,4 @@ export function FinancesView({
       />
     </div>
   );
-}
+});
