@@ -1,5 +1,5 @@
 /* @refresh reset */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Goal, GoalStatus, GoalArea, GoalType, GoalEnergy, MAX_ACTIVE_GOALS } from '@/types/goal';
 import { Task } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,7 +38,6 @@ export function useGoals(tasks: Task[]) {
 
   useEffect(() => { fetchGoals(); }, [fetchGoals]);
 
-  // Realtime subscription
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -59,22 +58,28 @@ export function useGoals(tasks: Task[]) {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const calculateProgress = useCallback((linkedTaskIds: string[]): number => {
-    if (linkedTaskIds.length === 0) return 0;
-    const linked = tasks.filter((t) => linkedTaskIds.includes(t.id));
-    if (linked.length === 0) return 0;
-    return Math.round((linked.filter((t) => t.status === 'completed').length / linked.length) * 100);
-  }, [tasks]);
-
-  useEffect(() => {
-    setGoals((prev) => prev.map((g) => ({ ...g, progress: calculateProgress(g.linkedTaskIds) })));
-  }, [tasks, calculateProgress]);
+  // Use useMemo instead of useEffect+setState to avoid extra render cycle
+  const goalsWithProgress = useMemo(() => {
+    if (goals.length === 0) return goals;
+    const allLinkedIds = new Set(goals.flatMap(g => g.linkedTaskIds));
+    if (allLinkedIds.size === 0) return goals;
+    // Only recalculate if any linked task exists
+    const taskMap = new Map(tasks.filter(t => allLinkedIds.has(t.id)).map(t => [t.id, t]));
+    if (taskMap.size === 0) return goals;
+    return goals.map(g => {
+      if (g.linkedTaskIds.length === 0) return g;
+      const linked = g.linkedTaskIds.map(id => taskMap.get(id)).filter(Boolean);
+      if (linked.length === 0) return g;
+      const progress = Math.round((linked.filter(t => t!.status === 'completed').length / linked.length) * 100);
+      return progress !== g.progress ? { ...g, progress } : g;
+    });
+  }, [goals, tasks]);
 
   const addGoal = async (
     title: string, area: GoalArea, type: GoalType, energy: GoalEnergy, quarter: string, description?: string
   ): Promise<boolean> => {
     if (!user) return false;
-    const activeCount = goals.filter((g) => g.quarter === quarter && g.status === 'active').length;
+    const activeCount = goalsWithProgress.filter((g) => g.quarter === quarter && g.status === 'active').length;
     if (activeCount >= MAX_ACTIVE_GOALS) return false;
 
     const { error } = await supabase.from('goals').insert({
@@ -98,14 +103,14 @@ export function useGoals(tasks: Task[]) {
   };
 
   const linkTask = async (goalId: string, taskId: string) => {
-    const goal = goals.find((g) => g.id === goalId);
+    const goal = goalsWithProgress.find((g) => g.id === goalId);
     if (!goal || goal.linkedTaskIds.includes(taskId)) return;
     const newIds = [...goal.linkedTaskIds, taskId];
     await supabase.from('goals').update({ linked_task_ids: newIds }).eq('id', goalId);
   };
 
   const unlinkTask = async (goalId: string, taskId: string) => {
-    const goal = goals.find((g) => g.id === goalId);
+    const goal = goalsWithProgress.find((g) => g.id === goalId);
     if (!goal) return;
     const newIds = goal.linkedTaskIds.filter((id) => id !== taskId);
     await supabase.from('goals').update({ linked_task_ids: newIds }).eq('id', goalId);
@@ -115,21 +120,28 @@ export function useGoals(tasks: Task[]) {
     await supabase.from('goals').delete().eq('id', id);
   };
 
-  const getActiveGoalsCount = (quarter: string) => goals.filter((g) => g.quarter === quarter && g.status === 'active').length;
+  const getActiveGoalsCount = (quarter: string) => goalsWithProgress.filter((g) => g.quarter === quarter && g.status === 'active').length;
 
   const getLinkedTasks = (goalId: string): Task[] => {
-    const goal = goals.find((g) => g.id === goalId);
+    const goal = goalsWithProgress.find((g) => g.id === goalId);
     if (!goal) return [];
     return tasks.filter((t) => goal.linkedTaskIds.includes(t.id));
   };
 
   const getUnlinkedTasks = (): Task[] => {
-    const allLinked = goals.flatMap((g) => g.linkedTaskIds);
+    const allLinked = goalsWithProgress.flatMap((g) => g.linkedTaskIds);
     return tasks.filter((t) => !allLinked.includes(t.id));
   };
 
+  const calculateProgress = useCallback((linkedTaskIds: string[]): number => {
+    if (linkedTaskIds.length === 0) return 0;
+    const linked = tasks.filter((t) => linkedTaskIds.includes(t.id));
+    if (linked.length === 0) return 0;
+    return Math.round((linked.filter((t) => t.status === 'completed').length / linked.length) * 100);
+  }, [tasks]);
+
   return {
-    goals, addGoal, updateGoalStatus, updateGoal, linkTask, unlinkTask, deleteGoal,
+    goals: goalsWithProgress, addGoal, updateGoalStatus, updateGoal, linkTask, unlinkTask, deleteGoal,
     getActiveGoalsCount, getLinkedTasks, getUnlinkedTasks, calculateProgress,
   };
 }

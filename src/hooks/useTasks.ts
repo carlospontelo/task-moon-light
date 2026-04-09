@@ -1,14 +1,15 @@
 /* @refresh reset */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Task, TaskStatus, BoardGroup } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { format, startOfDay, isBefore, parseISO } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 
 export function useTasks() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const cleanupDone = useRef(false);
 
   const mapRow = (t: any): Task => ({
     id: t.id,
@@ -22,24 +23,16 @@ export function useTasks() {
     sortOrder: t.sort_order ?? 0,
   });
 
-  // Auto-cleanup: delete completed tasks from previous days
-  const cleanupCompletedTasks = useCallback(async () => {
-    if (!user) return;
+  // Cleanup runs once on mount
+  useEffect(() => {
+    if (!user || cleanupDone.current) return;
+    cleanupDone.current = true;
     const today = format(startOfDay(new Date()), 'yyyy-MM-dd');
-    await supabase
-      .from('tasks')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('status', 'completed')
-      .lt('date', today);
+    supabase.from('tasks').delete().eq('user_id', user.id).eq('status', 'completed').lt('date', today).then();
   }, [user]);
 
   const fetchTasks = useCallback(async () => {
     if (!user) { setTasks([]); setLoading(false); return; }
-    
-    // Cleanup old completed tasks first
-    await cleanupCompletedTasks();
-    
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
@@ -49,10 +42,11 @@ export function useTasks() {
 
     if (!error && data) setTasks(data.map(mapRow));
     setLoading(false);
-  }, [user, cleanupCompletedTasks]);
+  }, [user]);
 
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
+  // Realtime — skip if optimistic state already matches
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -60,7 +54,10 @@ export function useTasks() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, (payload) => {
         if (payload.eventType === 'INSERT') {
           setTasks((prev) => {
-            if (prev.some((t) => t.id === (payload.new as any).id)) return prev;
+            if (prev.some((t) => t.id === (payload.new as any).id)) {
+              // Replace temp/optimistic entry with real data
+              return prev.map(t => t.id === (payload.new as any).id ? mapRow(payload.new) : t);
+            }
             return [mapRow(payload.new), ...prev];
           });
         } else if (payload.eventType === 'UPDATE') {
@@ -73,25 +70,41 @@ export function useTasks() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  const addTask = async (title: string, options?: { date?: string; tag?: string; boardGroup?: BoardGroup }) => {
+  const addTask = useCallback(async (title: string, options?: { date?: string; tag?: string; boardGroup?: BoardGroup }) => {
     if (!user) return;
     const today = format(new Date(), 'yyyy-MM-dd');
     const group = options?.boardGroup || 'today';
-    const tagValue = options?.tag && options.tag.trim() !== '' ? options.tag : null;
+    const tagValue = options?.tag && options.tag.trim() !== '' ? options.tag : undefined;
+    const tempId = crypto.randomUUID();
+    const tempTask: Task = {
+      id: tempId, title, status: 'pending', tag: tagValue,
+      date: options?.date || today, createdAt: new Date().toISOString(),
+      pinned: group === 'pinned', boardGroup: group, sortOrder: 0,
+    };
+    // Optimistic
+    setTasks(prev => [tempTask, ...prev]);
     const { error } = await supabase.from('tasks').insert({
-      user_id: user.id, title, status: 'pending', tag: tagValue,
+      id: tempId, user_id: user.id, title, status: 'pending', tag: tagValue || null,
       date: options?.date || today, pinned: group === 'pinned', board_group: group,
     });
     if (error) {
-      console.error('[addTask] Insert failed:', error.message, { title, tag: tagValue, group });
+      console.error('[addTask] Insert failed:', error.message);
+      setTasks(prev => prev.filter(t => t.id !== tempId));
     }
-  };
+  }, [user]);
 
-  const updateTaskStatus = async (id: string, status: TaskStatus) => {
-    await supabase.from('tasks').update({ status }).eq('id', id);
-  };
+  const updateTaskStatus = useCallback(async (id: string, status: TaskStatus) => {
+    setTasks(prev => {
+      const rollback = prev;
+      const updated = prev.map(t => t.id === id ? { ...t, status } : t);
+      supabase.from('tasks').update({ status }).eq('id', id).then(({ error }) => {
+        if (error) setTasks(rollback);
+      });
+      return updated;
+    });
+  }, []);
 
-  const updateTask = async (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => {
+  const updateTask = useCallback(async (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup }) => {
     const dbUpdates: any = {};
     if (updates.date !== undefined) dbUpdates.date = updates.date;
     if (updates.tag !== undefined) dbUpdates.tag = updates.tag === '' ? null : updates.tag;
@@ -99,30 +112,58 @@ export function useTasks() {
       dbUpdates.board_group = updates.boardGroup;
       dbUpdates.pinned = updates.boardGroup === 'pinned';
     }
-    const { error } = await supabase.from('tasks').update(dbUpdates).eq('id', id);
-    if (error) {
-      console.error('[updateTask] Update failed:', error.message, { id, updates: dbUpdates });
-    }
-  };
+    // Optimistic
+    setTasks(prev => {
+      const rollback = prev;
+      const updated = prev.map(t => {
+        if (t.id !== id) return t;
+        return { ...t, ...updates, tag: updates.tag === '' ? undefined : (updates.tag ?? t.tag), pinned: updates.boardGroup ? updates.boardGroup === 'pinned' : t.pinned };
+      });
+      supabase.from('tasks').update(dbUpdates).eq('id', id).then(({ error }) => {
+        if (error) setTasks(rollback);
+      });
+      return updated;
+    });
+  }, []);
 
-  const moveTask = async (id: string, boardGroup: BoardGroup) => {
+  const moveTask = useCallback(async (id: string, boardGroup: BoardGroup) => {
     const pinned = boardGroup === 'pinned';
-    await supabase.from('tasks').update({ board_group: boardGroup, pinned }).eq('id', id);
-  };
+    setTasks(prev => {
+      const rollback = prev;
+      const updated = prev.map(t => t.id === id ? { ...t, boardGroup, pinned } : t);
+      supabase.from('tasks').update({ board_group: boardGroup, pinned }).eq('id', id).then(({ error }) => {
+        if (error) setTasks(rollback);
+      });
+      return updated;
+    });
+  }, []);
 
-  const togglePin = async (id: string, pinned: boolean) => {
+  const togglePin = useCallback(async (id: string, pinned: boolean) => {
     const boardGroup = pinned ? 'pinned' : 'today';
-    await supabase.from('tasks').update({ pinned, board_group: boardGroup }).eq('id', id);
-  };
+    setTasks(prev => {
+      const rollback = prev;
+      const updated = prev.map(t => t.id === id ? { ...t, pinned, boardGroup } : t);
+      supabase.from('tasks').update({ pinned, board_group: boardGroup }).eq('id', id).then(({ error }) => {
+        if (error) setTasks(rollback);
+      });
+      return updated;
+    });
+  }, []);
 
-  const deleteTask = async (id: string) => {
-    await supabase.from('tasks').delete().eq('id', id);
-  };
+  const deleteTask = useCallback(async (id: string) => {
+    setTasks(prev => {
+      const rollback = prev;
+      const updated = prev.filter(t => t.id !== id);
+      supabase.from('tasks').delete().eq('id', id).then(({ error }) => {
+        if (error) setTasks(rollback);
+      });
+      return updated;
+    });
+  }, []);
 
-  const getTasksByDate = (date: string) => tasks.filter((t) => t.date === date);
+  const getTasksByDate = useCallback((date: string) => tasks.filter((t) => t.date === date), [tasks]);
 
-  const reorderTasks = async (reorderedTasks: { id: string; sortOrder: number }[]) => {
-    // Optimistic update
+  const reorderTasks = useCallback(async (reorderedTasks: { id: string; sortOrder: number }[]) => {
     setTasks(prev => {
       const updated = [...prev];
       for (const rt of reorderedTasks) {
@@ -131,11 +172,10 @@ export function useTasks() {
       }
       return updated;
     });
-    // Persist
     for (const rt of reorderedTasks) {
       await supabase.from('tasks').update({ sort_order: rt.sortOrder }).eq('id', rt.id);
     }
-  };
+  }, []);
 
   return { tasks, loading, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, getTasksByDate, reorderTasks };
 }
