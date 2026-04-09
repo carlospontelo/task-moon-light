@@ -118,9 +118,29 @@ export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSu
                 ))}
               </div>
             )}
+
+            {!requiresManual && (
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={() => setDetailMethod({ key, expenses: methodExpenses })}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                >
+                  Ver detalhes
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
+
+      <PaymentMethodDetailDialog
+        open={!!detailMethod}
+        onOpenChange={(open) => !open && setDetailMethod(null)}
+        methodKey={detailMethod?.key || ''}
+        expenses={detailMethod?.expenses || []}
+        totalMonth={totalAmount}
+      />
     </div>
   );
 }
