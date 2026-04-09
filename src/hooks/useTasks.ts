@@ -115,9 +115,9 @@ export function useTasks() {
     // Optimistic
     setTasks(prev => {
       const rollback = prev;
-      const updated = prev.map(t => {
+      const updated: Task[] = prev.map(t => {
         if (t.id !== id) return t;
-        return { ...t, ...updates, tag: updates.tag === '' ? undefined : (updates.tag ?? t.tag), pinned: updates.boardGroup ? updates.boardGroup === 'pinned' : t.pinned };
+        return { ...t, ...updates, tag: updates.tag === '' ? undefined : (updates.tag ?? t.tag), pinned: updates.boardGroup ? updates.boardGroup === 'pinned' : t.pinned } as Task;
       });
       supabase.from('tasks').update(dbUpdates).eq('id', id).then(({ error }) => {
         if (error) setTasks(rollback);
@@ -139,7 +139,7 @@ export function useTasks() {
   }, []);
 
   const togglePin = useCallback(async (id: string, pinned: boolean) => {
-    const boardGroup = pinned ? 'pinned' : 'today';
+    const boardGroup: BoardGroup = pinned ? 'pinned' : 'today';
     setTasks(prev => {
       const rollback = prev;
       const updated = prev.map(t => t.id === id ? { ...t, pinned, boardGroup } : t);
