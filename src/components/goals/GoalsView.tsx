@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Goal, GoalStatus, getCurrentQuarter, MAX_ACTIVE_GOALS } from '@/types/goal';
 import { Task } from '@/types/task';
 import { QuarterSelector } from './QuarterSelector';

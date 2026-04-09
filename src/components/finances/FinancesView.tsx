@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Expense, ExpenseType, getCurrentMonth, getMonthLabel } from '@/types/expense';
 import { MonthNavigator } from './MonthNavigator';
 import { MonthSummary } from './MonthSummary';
