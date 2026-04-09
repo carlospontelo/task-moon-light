@@ -35,7 +35,7 @@ interface FinancesViewProps {
   getTypeTotal: (month: string, type: ExpenseType) => number;
 }
 
-export function FinancesView({
+export const FinancesView = memo(function FinancesView({
   addExpense,
   updateExpense,
   deleteExpense,
@@ -189,4 +189,4 @@ export function FinancesView({
       />
     </div>
   );
-}
+});

@@ -40,7 +40,7 @@ interface GoalsViewProps {
   getActiveGoalsCount: (quarter: string) => number;
 }
 
-export function GoalsView({
+export const GoalsView = memo(function GoalsView({
   goals,
   tasks,
   addGoal,
@@ -253,4 +253,4 @@ export function GoalsView({
       </AlertDialog>
     </div>
   );
-}
+});
