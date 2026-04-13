@@ -9,9 +9,16 @@ interface MasterExpense extends Expense {
   masterExpenseId?: string;
 }
 
+interface ExpensePayment {
+  id: string;
+  expense_id: string;
+  month: string;
+}
+
 export function useExpenses() {
   const { user } = useAuth();
   const [rawExpenses, setRawExpenses] = useState<Expense[]>([]);
+  const [payments, setPayments] = useState<ExpensePayment[]>([]);
 
   const mapRow = (e: any): Expense => ({
     id: e.id,
@@ -25,7 +32,7 @@ export function useExpenses() {
     fixedGroupId: e.fixed_group_id || undefined,
     month: e.month,
     paymentMethod: e.payment_method || undefined,
-    paid: e.paid ?? false,
+    paid: false, // Legacy field, no longer used
     createdAt: new Date(e.created_at),
   });
 
@@ -40,8 +47,19 @@ export function useExpenses() {
     if (!error && data) setRawExpenses(data.map(mapRow));
   }, [user]);
 
-  useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
+  const fetchPayments = useCallback(async () => {
+    if (!user) { setPayments([]); return; }
+    const { data, error } = await supabase
+      .from('expense_payments')
+      .select('id, expense_id, month')
+      .eq('user_id', user.id);
 
+    if (!error && data) setPayments(data);
+  }, [user]);
+
+  useEffect(() => { fetchExpenses(); fetchPayments(); }, [fetchExpenses, fetchPayments]);
+
+  // Realtime for expenses
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -56,6 +74,26 @@ export function useExpenses() {
           setRawExpenses((prev) => prev.map((e) => e.id === (payload.new as any).id ? mapRow(payload.new) : e));
         } else if (payload.eventType === 'DELETE') {
           setRawExpenses((prev) => prev.filter((e) => e.id !== (payload.old as any).id));
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  // Realtime for expense_payments
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('expense-payments-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expense_payments', filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const p = payload.new as any;
+          setPayments((prev) => {
+            if (prev.some((x) => x.id === p.id)) return prev;
+            return [...prev, { id: p.id, expense_id: p.expense_id, month: p.month }];
+          });
+        } else if (payload.eventType === 'DELETE') {
+          setPayments((prev) => prev.filter((x) => x.id !== (payload.old as any).id));
         }
       })
       .subscribe();
@@ -82,6 +120,20 @@ export function useExpenses() {
     }
     return result;
   }, [rawExpenses]);
+
+  // Payment lookup set for O(1) checks
+  const paymentSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of payments) {
+      set.add(`${p.expense_id}::${p.month}`);
+    }
+    return set;
+  }, [payments]);
+
+  const isPaid = useCallback((expenseId: string, month: string): boolean => {
+    const realId = expenseId.includes('_virtual_') ? expenseId.split('_virtual_')[0] : expenseId;
+    return paymentSet.has(`${realId}::${month}`);
+  }, [paymentSet]);
 
   const addExpense = useCallback(async (data: {
     name: string; amount: number; category: string; type: ExpenseType;
@@ -158,7 +210,6 @@ export function useExpenses() {
     if (data.category !== undefined) dbData.category = data.category;
     if (data.paymentMethod !== undefined) dbData.payment_method = data.paymentMethod || null;
 
-    // Optimistic for raw expenses
     const prev = rawExpenses;
     if (expense.type === 'installment' || expense.type === 'single' || scope === 'this') {
       setRawExpenses(r => r.map(e => e.id === realId ? { ...e, ...data } : e));
@@ -193,7 +244,6 @@ export function useExpenses() {
     if (!expense) return;
 
     const prev = rawExpenses;
-    // Optimistic delete
     if (expense.type === 'installment' || expense.type === 'single' || scope === 'this') {
       setRawExpenses(r => r.filter(e => e.id !== realId));
     } else if (expense.type === 'fixed' && expense.fixedGroupId) {
@@ -241,18 +291,32 @@ export function useExpenses() {
     return expenses.filter((e) => e.month === month && e.type === type).reduce((sum, e) => sum + e.amount, 0);
   }, [expenses]);
 
-  const togglePaid = useCallback(async (expenseId: string) => {
-    const expense = expenses.find(e => e.id === expenseId);
-    if (!expense) return;
+  const togglePaid = useCallback(async (expenseId: string, month: string) => {
+    if (!user) return;
     const realId = expenseId.includes('_virtual_') ? expenseId.split('_virtual_')[0] : expenseId;
-    const prev = rawExpenses;
-    setRawExpenses(r => r.map(e => e.id === realId ? { ...e, paid: !expense.paid } : e));
-    const { error } = await supabase.from('expenses').update({ paid: !expense.paid } as any).eq('id', realId);
-    if (error) setRawExpenses(prev);
-  }, [expenses, rawExpenses]);
+    const key = `${realId}::${month}`;
+    const currentlyPaid = paymentSet.has(key);
+    const existingPayment = payments.find(p => p.expense_id === realId && p.month === month);
+
+    if (currentlyPaid && existingPayment) {
+      // Optimistic: remove
+      setPayments(prev => prev.filter(p => p.id !== existingPayment.id));
+      const { error } = await supabase.from('expense_payments').delete().eq('id', existingPayment.id);
+      if (error) setPayments(prev => [...prev, existingPayment]);
+    } else {
+      // Optimistic: add
+      const tempId = crypto.randomUUID();
+      const tempPayment = { id: tempId, expense_id: realId, month };
+      setPayments(prev => [...prev, tempPayment]);
+      const { error } = await supabase.from('expense_payments').insert({
+        id: tempId, expense_id: realId, user_id: user.id, month,
+      });
+      if (error) setPayments(prev => prev.filter(p => p.id !== tempId));
+    }
+  }, [user, paymentSet, payments]);
 
   return {
-    expenses, addExpense, updateExpense, deleteExpense, togglePaid,
+    expenses, addExpense, updateExpense, deleteExpense, togglePaid, isPaid,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
   };
 }
