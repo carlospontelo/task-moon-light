@@ -9,10 +9,12 @@ import { PaymentMethodDetailDialog } from './PaymentMethodDetailDialog';
 
 interface PaymentMethodSummaryProps {
   expenses: Expense[];
-  onTogglePaid?: (expenseId: string) => void;
+  selectedMonth: string;
+  isPaid: (expenseId: string, month: string) => boolean;
+  onTogglePaid?: (expenseId: string, month: string) => void;
 }
 
-export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSummaryProps) {
+export function PaymentMethodSummary({ expenses, selectedMonth, isPaid, onTogglePaid }: PaymentMethodSummaryProps) {
   const { getPaymentMethodByKey } = useSettings();
   const [detailMethod, setDetailMethod] = useState<{ key: string; expenses: Expense[] } | null>(null);
 
