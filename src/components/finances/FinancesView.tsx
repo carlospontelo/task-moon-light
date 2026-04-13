@@ -26,7 +26,8 @@ interface FinancesViewProps {
     scope: 'this' | 'from_this' | 'all'
   ) => void;
   deleteExpense: (expenseId: string, scope: 'this' | 'from_this' | 'all') => void;
-  togglePaid: (expenseId: string) => void;
+  togglePaid: (expenseId: string, month: string) => void;
+  isPaid: (expenseId: string, month: string) => boolean;
   getExpensesByMonthAndType: (month: string, type: ExpenseType) => Expense[];
   getCategoryBreakdown: (month: string) => {
     breakdown: Record<string, { amount: number; percentage: number }>;
