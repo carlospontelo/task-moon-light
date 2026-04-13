@@ -26,7 +26,8 @@ interface FinancesViewProps {
     scope: 'this' | 'from_this' | 'all'
   ) => void;
   deleteExpense: (expenseId: string, scope: 'this' | 'from_this' | 'all') => void;
-  togglePaid: (expenseId: string) => void;
+  togglePaid: (expenseId: string, month: string) => void;
+  isPaid: (expenseId: string, month: string) => boolean;
   getExpensesByMonthAndType: (month: string, type: ExpenseType) => Expense[];
   getCategoryBreakdown: (month: string) => {
     breakdown: Record<string, { amount: number; percentage: number }>;
@@ -40,6 +41,7 @@ export const FinancesView = memo(function FinancesView({
   updateExpense,
   deleteExpense,
   togglePaid,
+  isPaid,
   getExpensesByMonthAndType,
   getCategoryBreakdown,
   getTypeTotal,
@@ -92,7 +94,7 @@ export const FinancesView = memo(function FinancesView({
         <div className="lg:hidden">
           {hasExpenses && (
             <div className="p-5 rounded-2xl bg-secondary/30 border border-border">
-              <PaymentMethodSummary expenses={allMonthExpenses} onTogglePaid={togglePaid} />
+              <PaymentMethodSummary expenses={allMonthExpenses} selectedMonth={selectedMonth} isPaid={isPaid} onTogglePaid={togglePaid} />
             </div>
           )}
         </div>
@@ -161,7 +163,7 @@ export const FinancesView = memo(function FinancesView({
         {/* Right: Payment method summary (~35%), sticky on desktop */}
         <div className="hidden lg:block lg:col-span-2">
           <div className="p-5 rounded-2xl bg-secondary/30 border border-border">
-            <PaymentMethodSummary expenses={allMonthExpenses} onTogglePaid={togglePaid} />
+            <PaymentMethodSummary expenses={allMonthExpenses} selectedMonth={selectedMonth} isPaid={isPaid} onTogglePaid={togglePaid} />
           </div>
         </div>
       </div>

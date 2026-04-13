@@ -9,10 +9,12 @@ import { PaymentMethodDetailDialog } from './PaymentMethodDetailDialog';
 
 interface PaymentMethodSummaryProps {
   expenses: Expense[];
-  onTogglePaid?: (expenseId: string) => void;
+  selectedMonth: string;
+  isPaid: (expenseId: string, month: string) => boolean;
+  onTogglePaid?: (expenseId: string, month: string) => void;
 }
 
-export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSummaryProps) {
+export function PaymentMethodSummary({ expenses, selectedMonth, isPaid, onTogglePaid }: PaymentMethodSummaryProps) {
   const { getPaymentMethodByKey } = useSettings();
   const [detailMethod, setDetailMethod] = useState<{ key: string; expenses: Expense[] } | null>(null);
 
@@ -61,7 +63,7 @@ export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSu
         const amount = methodExpenses.reduce((s, e) => s + e.amount, 0);
         const percentage = totalAmount > 0 ? (amount / totalAmount) * 100 : 0;
         const requiresManual = pm?.requiresManualPayment ?? false;
-        const paidCount = methodExpenses.filter(e => e.paid).length;
+        const paidCount = methodExpenses.filter(e => isPaid(e.id, selectedMonth)).length;
 
         return (
           <div
@@ -94,23 +96,23 @@ export function PaymentMethodSummary({ expenses, onTogglePaid }: PaymentMethodSu
                     key={exp.id}
                     className={cn(
                       "flex items-center gap-2 py-1 px-1 rounded-md transition-opacity",
-                      exp.paid && "opacity-50"
+                      isPaid(exp.id, selectedMonth) && "opacity-50"
                     )}
                   >
                     <Checkbox
-                      checked={exp.paid}
-                      onCheckedChange={() => onTogglePaid(exp.id)}
+                      checked={isPaid(exp.id, selectedMonth)}
+                      onCheckedChange={() => onTogglePaid(exp.id, selectedMonth)}
                       className="h-3.5 w-3.5"
                     />
                     <span className={cn(
                       "text-xs flex-1 truncate text-foreground",
-                      exp.paid && "line-through"
+                      isPaid(exp.id, selectedMonth) && "line-through"
                     )}>
                       {exp.name}
                     </span>
                     <span className={cn(
                       "text-xs text-muted-foreground",
-                      exp.paid && "line-through"
+                      isPaid(exp.id, selectedMonth) && "line-through"
                     )}>
                       {formatCurrency(exp.amount)}
                     </span>
