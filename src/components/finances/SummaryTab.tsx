@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import NumberFlow from '@number-flow/react';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Button } from '@/components/ui/button';
 import { PieChart, type PieSlice } from '@/components/spectrumui/charts/pie-chart';
 import { CHART, CHART_TOOLTIP_CLASS } from '@/lib/chart-theme';
 import { cn } from '@/lib/utils';
@@ -51,19 +50,30 @@ function Swatch({ color, hatched, id }: { color: string; hatched?: boolean; id: 
 
 /* ---------- Numbers ---------- */
 
-export function SummaryNumbers({ totals, compact = false }: { totals: MonthTotals; compact?: boolean }) {
-  const negative = totals.left < 0;
+interface SummaryNumbersProps {
+  totals: MonthTotals;
+  compact?: boolean;
+  /** Shows an "Adicionar entrada" link under the Entrou card. */
+  onAddIncome?: () => void;
+  /** Without income, Sobrou shows "—" instead of a negative value. */
+  dashWhenNoIncome?: boolean;
+}
+
+export function SummaryNumbers({ totals, compact = false, onAddIncome, dashWhenNoIncome = false }: SummaryNumbersProps) {
+  const noIncome = dashWhenNoIncome && totals.income === 0;
+  const negative = !noIncome && totals.left < 0;
   const items = [
     { key: 'income', label: 'Entrou', value: totals.income, color: SUMMARY_COLORS.income },
     { key: 'expenses', label: 'Gastos', value: totals.expenses, color: SUMMARY_COLORS.expenses },
     { key: 'invested', label: 'Investido', value: totals.invested, color: SUMMARY_COLORS.invested },
-    { key: 'left', label: 'Sobrou', value: totals.left, color: negative ? SUMMARY_COLORS.expenses : SUMMARY_COLORS.left },
+    { key: 'left', label: 'Sobrou', value: totals.left, color: noIncome ? 'hsl(var(--subtle))' : negative ? SUMMARY_COLORS.expenses : SUMMARY_COLORS.left },
   ];
 
   return (
     <div className={cn('grid grid-cols-2 gap-3', !compact && 'lg:grid-cols-4')}>
       {items.map(item => {
         const isLeft = item.key === 'left';
+        const hatched = isLeft && !negative && !noIncome;
         return (
           <div
             key={item.key}
@@ -74,24 +84,37 @@ export function SummaryNumbers({ totals, compact = false }: { totals: MonthTotal
               isLeft && negative ? 'border-destructive/40' : 'border-border',
             )}
           >
-            {isLeft && !negative && (
+            {hatched && (
               // Stripes = money without a destination yet.
               <HatchFill id={`left-card-${compact ? 'c' : 'f'}`} color={SUMMARY_COLORS.left} className="pointer-events-none absolute inset-x-0 bottom-0 h-1.5" />
             )}
             <p className={cn('flex items-center gap-2', compact ? 'text-[11px] text-muted-foreground' : LABEL)}>
-              <Swatch id={`sw-${item.key}-${compact ? 'c' : 'f'}`} color={item.color} hatched={isLeft && !negative} />
+              <Swatch id={`sw-${item.key}-${compact ? 'c' : 'f'}`} color={item.color} hatched={hatched} />
               {item.label}
             </p>
-            <NumberFlow
-              value={item.value / 100}
-              format={BRL}
-              locales="pt-BR"
-              className={cn(
-                'num mt-2 font-medium',
-                compact ? 'text-lg' : 'text-lg sm:text-2xl xl:text-3xl',
-                isLeft && negative ? 'text-destructive' : 'text-foreground',
-              )}
-            />
+            {isLeft && noIncome ? (
+              <p className={cn('num mt-2 font-medium text-subtle', compact ? 'text-lg' : 'text-lg sm:text-2xl xl:text-3xl')} aria-label="Sem entradas">—</p>
+            ) : (
+              <NumberFlow
+                value={item.value / 100}
+                format={BRL}
+                locales="pt-BR"
+                className={cn(
+                  'num mt-2 font-medium',
+                  compact ? 'text-lg' : 'text-lg sm:text-2xl xl:text-3xl',
+                  isLeft && negative ? 'text-destructive' : 'text-foreground',
+                )}
+              />
+            )}
+            {item.key === 'income' && onAddIncome && (
+              <button
+                type="button"
+                onClick={onAddIncome}
+                className="mt-1 block text-xs text-subtle underline-offset-2 transition-colors hover:text-foreground hover:underline"
+              >
+                Adicionar entrada
+              </button>
+            )}
           </div>
         );
       })}
@@ -110,16 +133,20 @@ interface SummaryTabProps {
 
 export function SummaryTab({ month, getCategoryBreakdown, finance, onGoToIncome }: SummaryTabProps) {
   const totals = monthTotals(month, getCategoryBreakdown, finance);
-  const negative = totals.left < 0;
+  const hasIncome = totals.income > 0;
+  const negative = hasIncome && totals.left < 0;
+  const totalOut = totals.expenses + totals.invested;
+  // Without income, percentages are relative to what went out.
+  const pctBase = hasIncome ? totals.income : totalOut;
 
   const slices: PieSlice[] = useMemo(() => {
     const s: PieSlice[] = [
       { key: 'expenses', name: 'Gastos', value: totals.expenses, color: SUMMARY_COLORS.expenses },
       { key: 'invested', name: 'Investido', value: totals.invested, color: SUMMARY_COLORS.invested },
     ];
-    if (totals.left > 0) s.push({ key: 'left', name: 'Sobrou', value: totals.left, color: SUMMARY_COLORS.left, hatched: true });
+    if (hasIncome && totals.left > 0) s.push({ key: 'left', name: 'Sobrou', value: totals.left, color: SUMMARY_COLORS.left, hatched: true });
     return s.filter(x => x.value > 0);
-  }, [totals.expenses, totals.invested, totals.left]);
+  }, [totals.expenses, totals.invested, totals.left, hasIncome]);
 
   const history = useMemo(() => {
     return Array.from({ length: 6 }, (_, i) => {
@@ -129,23 +156,9 @@ export function SummaryTab({ month, getCategoryBreakdown, finance, onGoToIncome 
     });
   }, [month, getCategoryBreakdown, finance]);
 
-  if (totals.income === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-border-strong px-6 py-14 text-center">
-        <p className="text-sm font-medium text-foreground">Sem entradas neste mês</p>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-          Adicione suas entradas do mês para ver o resumo.
-        </p>
-        <Button variant="outline" className="mt-5" onClick={onGoToIncome}>
-          Ir para Entradas
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      <SummaryNumbers totals={totals} />
+      <SummaryNumbers totals={totals} onAddIncome={onGoToIncome} dashWhenNoIncome />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         {/* Where the money went */}
@@ -158,8 +171,8 @@ export function SummaryTab({ month, getCategoryBreakdown, finance, onGoToIncome 
               formatValue={formatCurrency}
               center={
                 <>
-                  <span className="text-[11px] text-subtle">Entrou</span>
-                  <span className="num text-sm text-foreground">{formatCurrency(totals.income)}</span>
+                  <span className="text-[11px] text-subtle">{hasIncome ? 'Entrou' : 'Saiu'}</span>
+                  <span className="num text-sm text-foreground">{formatCurrency(hasIncome ? totals.income : totalOut)}</span>
                 </>
               }
             />
@@ -167,17 +180,22 @@ export function SummaryTab({ month, getCategoryBreakdown, finance, onGoToIncome 
               {[
                 { key: 'expenses', name: 'Gastos', value: totals.expenses, color: SUMMARY_COLORS.expenses },
                 { key: 'invested', name: 'Investido', value: totals.invested, color: SUMMARY_COLORS.invested },
-                ...(negative ? [] : [{ key: 'left', name: 'Sobrou', value: totals.left, color: SUMMARY_COLORS.left, hatched: true }]),
+                ...(!hasIncome || negative ? [] : [{ key: 'left', name: 'Sobrou', value: totals.left, color: SUMMARY_COLORS.left, hatched: true }]),
               ].map(row => (
                 <li key={row.key} className="flex items-center gap-2.5 text-sm">
                   <Swatch id={`legend-${row.key}`} color={row.color} hatched={'hatched' in row && row.hatched} />
                   <span className="text-muted-foreground">{row.name}</span>
                   <span className="num ml-auto text-foreground">{formatCurrency(row.value)}</span>
-                  <span className="num w-11 text-right text-subtle">{pct(row.value, totals.income)}%</span>
+                  <span className="num w-11 text-right text-subtle">{pct(row.value, pctBase)}%</span>
                 </li>
               ))}
             </ul>
           </div>
+          {!hasIncome && (
+            <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
+              Nenhuma entrada lançada neste mês
+            </p>
+          )}
           {negative && (
             <p className="mt-5 border-t border-border pt-4 text-sm text-destructive">
               Você gastou <span className="num">{formatCurrency(-totals.left)}</span> a mais do que entrou
