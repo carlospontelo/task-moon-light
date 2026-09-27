@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useGoals } from '@/hooks/useGoals';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useFinanceEntries } from '@/hooks/useFinanceEntries';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppShell } from '@/components/layout/AppShell';
 import type { TabType } from '@/components/layout/nav-items';
@@ -27,6 +28,7 @@ const Index = () => {
     goals, addGoal, updateGoalStatus, updateGoal, deleteGoal,
     linkTask, unlinkTask, getLinkedTasks, getUnlinkedTasks, getActiveGoalsCount,
   } = useGoals(tasks);
+  const finance = useFinanceEntries();
 
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -92,6 +94,8 @@ const Index = () => {
             onUpdateTaskStatus={updateTaskStatus}
             onNavigateToTasks={() => setActiveTab('todo')}
             getCategoryBreakdown={getCategoryBreakdown}
+            finance={finance}
+            onNavigateToFinances={() => setActiveTab('finances')}
           />
         )}
         {activeTab === 'todo' && (
@@ -114,7 +118,7 @@ const Index = () => {
         {activeTab === 'finances' && (
           <FinancesView expenses={expenses} addExpense={addExpense} updateExpense={updateExpense}
             deleteExpense={deleteExpense} togglePaid={togglePaid} isPaid={isPaid} getExpensesByMonthAndType={getExpensesByMonthAndType}
-            getCategoryBreakdown={getCategoryBreakdown} getTypeTotal={getTypeTotal} />
+            getCategoryBreakdown={getCategoryBreakdown} getTypeTotal={getTypeTotal} finance={finance} />
         )}
       </AppShell>
 

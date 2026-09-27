@@ -4,6 +4,7 @@ import { ptBR } from 'date-fns/locale';
 import { Task } from '@/types/task';
 import { Goal } from '@/types/goal';
 import { PageHeader } from '@/components/layout/PageHeader';
+import type { FinanceEntriesApi } from '@/hooks/useFinanceEntries';
 import { DashboardTasksBlock } from './DashboardTasksBlock';
 import { DashboardFinanceBlock } from './DashboardFinanceBlock';
 import { DashboardGoalsBlock } from './DashboardGoalsBlock';
@@ -15,11 +16,13 @@ interface Props {
   onUpdateTaskStatus: (id: string, status: 'pending' | 'in_progress' | 'completed') => void;
   onNavigateToTasks: () => void;
   getCategoryBreakdown: (month: string) => { breakdown: Record<string, { amount: number; percentage: number }>; total: number };
+  finance: FinanceEntriesApi;
+  onNavigateToFinances: () => void;
 }
 
 const BLOCK = 'rounded-xl border border-border bg-card p-5 sm:p-6';
 
-export const DashboardView = memo(function DashboardView({ tasks, goals, onUpdateTaskStatus, onNavigateToTasks, getCategoryBreakdown }: Props) {
+export const DashboardView = memo(function DashboardView({ tasks, goals, onUpdateTaskStatus, onNavigateToTasks, getCategoryBreakdown, finance, onNavigateToFinances }: Props) {
   const todayLabel = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
@@ -40,7 +43,7 @@ export const DashboardView = memo(function DashboardView({ tasks, goals, onUpdat
         </section>
         <div className="grid grid-cols-1 gap-4 lg:col-span-5">
           <section className={BLOCK}>
-            <DashboardFinanceBlock getCategoryBreakdown={getCategoryBreakdown} />
+            <DashboardFinanceBlock getCategoryBreakdown={getCategoryBreakdown} finance={finance} onNavigateToFinances={onNavigateToFinances} />
           </section>
           <section className={BLOCK}>
             <DashboardGoalsBlock goals={goals} />

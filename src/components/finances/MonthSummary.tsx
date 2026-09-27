@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { PieChart } from '@/components/spectrumui/charts/pie-chart';
 import { formatCurrency, addMonths, getMonthLabel } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
 import { CHART, CHART_TOOLTIP_CLASS } from '@/lib/chart-theme';
@@ -194,24 +195,12 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
         {/* Left: Donut chart */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex-shrink-0">
-            <ResponsiveContainer width={180} height={180}>
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  dataKey="value"
-                  innerRadius="62%"
-                  outerRadius="92%"
-                  paddingAngle={2}
-                  strokeWidth={0}
-                >
-                  {donutData.map((entry) => (
-                    <Cell key={entry.key} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Each slice keeps its category color (barColor from settings). */}
+          <PieChart
+            className="h-[180px] w-[180px] flex-shrink-0"
+            data={donutData.map((d) => ({ key: d.key, name: d.name, value: d.value, color: d.color }))}
+            formatValue={formatCurrency}
+          />
 
           {/* Legend */}
           <div className="flex flex-col gap-2 min-w-0 w-full">
