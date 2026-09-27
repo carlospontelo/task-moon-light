@@ -113,7 +113,8 @@ export const FinancesView = memo(function FinancesView({
       {tab === 'expenses' && (
         <div className="space-y-6">
         {/* Month Summary */}
-        <div className="p-5 sm:p-6 rounded-xl bg-card border border-border">
+        {/* relative z-20: the chart tooltip must render above the cards below */}
+        <div className="relative z-20 p-5 sm:p-6 rounded-xl bg-card border border-border">
           <MonthSummary selectedMonth={selectedMonth} getCategoryBreakdown={getCategoryBreakdown} />
         </div>
 

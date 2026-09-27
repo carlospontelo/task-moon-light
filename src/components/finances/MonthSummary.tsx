@@ -119,16 +119,16 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
 
     return (
       <div className={CHART_TOOLTIP_CLASS}>
-        <p className="font-medium text-foreground mb-1">{getMonthLabel(row.rawMonth).full}</p>
-        <p className="num text-base text-foreground mb-2">{formatCurrency(row.total)}</p>
+        <p className="font-medium leading-tight text-foreground">{getMonthLabel(row.rawMonth).full}</p>
+        <p className="num mb-1.5 text-sm leading-tight text-foreground">{formatCurrency(row.total)}</p>
         {items.length === 0 ? (
           <p className="text-subtle">Sem gastos</p>
         ) : (
-          <div className="space-y-1">
+          <div className="border-t border-border pt-1">
             {items.map(item => (
-              <div key={item.key} className="flex items-center gap-1.5">
-                <div className="w-2 h-2 shrink-0 rounded-full" style={{ background: item.color }} />
-                <span className="shrink-0">{item.icon}</span>
+              <div key={item.key} className="flex items-center gap-1.5 text-[11px] leading-[1.35]">
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: item.color }} />
+                <span className="shrink-0 text-[10px]">{item.icon}</span>
                 <span className="text-muted-foreground">{item.name}</span>
                 <span className="num ml-auto pl-4 text-foreground">{formatCurrency(item.value)}</span>
               </div>
@@ -203,7 +203,12 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
                 tick={CHART.tick}
                 width={40}
               />
-              <Tooltip content={<BarTooltipContent />} cursor={{ fill: CHART.cursor, radius: 4 }} />
+              <Tooltip
+                content={<BarTooltipContent />}
+                cursor={{ fill: CHART.cursor, radius: 4 }}
+                wrapperStyle={{ zIndex: 50 }}
+                allowEscapeViewBox={{ x: false, y: true }}
+              />
               {stackKeys.map((key) => (
                 <Bar
                   key={key}
