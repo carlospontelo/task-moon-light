@@ -6,6 +6,8 @@ import { TaskColumn } from './TaskColumn';
 import { TaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
 import { EditTaskDialog } from './EditTaskDialog';
+import { PageHeader } from './layout/PageHeader';
+import { ChevronRight } from 'lucide-react';
 
 interface TodoViewProps {
   tasks: Task[];
@@ -93,15 +95,19 @@ export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, o
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-semibold text-foreground">Tarefas</h1>
-        <p className="text-sm text-muted-foreground">
-          {activeCount} {activeCount === 1 ? 'tarefa ativa' : 'tarefas ativas'}
-          {inProgressCount > 0 && <span className="text-primary"> • {inProgressCount} em andamento</span>}
-        </p>
-      </div>
+      <PageHeader
+        title="Tarefas"
+        description={
+          <>
+            <span className="num">{activeCount}</span> {activeCount === 1 ? 'tarefa ativa' : 'tarefas ativas'}
+            {inProgressCount > 0 && <> · <span className="num text-primary">{inProgressCount}</span> em andamento</>}
+          </>
+        }
+      />
 
-      <AddTaskForm onAdd={onAdd} />
+      <div className="rounded-xl border border-border bg-card p-4">
+        <AddTaskForm onAdd={onAdd} />
+      </div>
 
       <DndContext
         sensors={sensors}
@@ -109,7 +115,7 @@ export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, o
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
           {GROUPS.map(group => (
             <TaskColumn
               key={group}
@@ -125,7 +131,7 @@ export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, o
 
         <DragOverlay>
           {activeTask ? (
-            <div className="bg-card border border-primary/30 rounded-lg px-3 py-2.5 shadow-xl shadow-primary/10">
+            <div className="bg-surface-3 border border-primary rounded-lg px-3 py-2.5">
               <p className="text-sm text-foreground">{activeTask.title}</p>
             </div>
           ) : null}
@@ -135,18 +141,18 @@ export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, o
       {/* Completed tasks - today only */}
       {completedTodayTasks.length > 0 && (
         <details className="group">
-          <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground uppercase tracking-wider font-semibold py-2 select-none">
-            <span className="transition-transform group-open:rotate-90">▶</span>
+          <summary className="flex items-center gap-2 cursor-pointer list-none text-xs text-muted-foreground uppercase tracking-[0.06em] font-medium py-2 select-none [&::-webkit-details-marker]:hidden">
+            <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
             Concluídas hoje
-            <span className="bg-secondary/50 px-1.5 py-0.5 rounded-full font-mono">
+            <span className="num text-subtle">
               {completedTodayTasks.length}
             </span>
           </summary>
-          <div className="space-y-1 mt-2 opacity-50">
+          <div className="mt-1 divide-y divide-border rounded-xl border border-border bg-card">
             {completedTodayTasks.map(task => (
-              <div key={task.id} className="flex items-center gap-3 px-3 py-2 rounded-lg">
-                <span className="text-emerald-400">✓</span>
-                <p className="text-sm line-through text-muted-foreground">{task.title}</p>
+              <div key={task.id} className="flex items-center gap-3 px-4 py-2.5">
+                <span className="text-success text-sm" aria-hidden>✓</span>
+                <p className="text-sm line-through text-subtle">{task.title}</p>
               </div>
             ))}
           </div>
@@ -154,9 +160,9 @@ export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, o
       )}
 
       {tasks.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-muted-foreground">Nenhuma tarefa ainda</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">Adicione sua primeira tarefa acima</p>
+        <div className="text-center py-12">
+          <p className="text-sm font-medium text-foreground">Quadro vazio</p>
+          <p className="text-sm text-muted-foreground mt-1">Escreva a primeira tarefa no campo acima e escolha em qual coluna ela entra.</p>
         </div>
       )}
 

@@ -1,6 +1,6 @@
-import { Goal, getCurrentQuarter, getQuarterLabel, GOAL_AREA_COLORS, GoalArea } from '@/types/goal';
+import { Goal, getCurrentQuarter, getQuarterLabel } from '@/types/goal';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import { BlockHeader } from './BlockHeader';
 
 interface Props {
   goals: Goal[];
@@ -12,31 +12,27 @@ export function DashboardGoalsBlock({ goals }: Props) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-foreground">Metas</h3>
-        <span className="text-xs text-muted-foreground font-mono">{getQuarterLabel(quarter)}</span>
-      </div>
+      <BlockHeader
+        label="Metas"
+        action={<span className="num text-xs text-subtle">{getQuarterLabel(quarter)}</span>}
+      />
 
-      <div className="flex-1 space-y-3">
+      <div className="flex-1 mt-4 space-y-4">
         {quarterGoals.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-muted-foreground">Nenhuma meta ativa</p>
+          <div>
+            <p className="text-sm font-medium text-foreground">Sem metas ativas</p>
+            <p className="mt-1 text-xs text-muted-foreground">Crie metas na aba Metas para acompanhar o trimestre aqui.</p>
           </div>
         ) : (
-          quarterGoals.map(goal => {
-            const areaColors = GOAL_AREA_COLORS[goal.area as GoalArea];
-            return (
-              <div key={goal.id} className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-foreground truncate flex-1">{goal.title}</span>
-                  <span className={cn("text-xs font-medium ml-2", areaColors?.text || 'text-muted-foreground')}>
-                    {goal.progress}%
-                  </span>
-                </div>
-                <Progress value={goal.progress} className="h-1.5" />
+          quarterGoals.map(goal => (
+            <div key={goal.id} className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-foreground truncate flex-1">{goal.title}</span>
+                <span className="num text-xs text-muted-foreground">{goal.progress}%</span>
               </div>
-            );
-          })
+              <Progress value={goal.progress} className="h-1" />
+            </div>
+          ))
         )}
       </div>
     </div>

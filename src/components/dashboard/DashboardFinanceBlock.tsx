@@ -3,6 +3,7 @@ import { getCurrentMonth, getMonthLabel, addMonths, formatCurrency } from '@/typ
 import { useSettings } from '@/contexts/SettingsContext';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BlockHeader } from './BlockHeader';
 
 interface Props {
   getCategoryBreakdown: (month: string) => { breakdown: Record<string, { amount: number; percentage: number }>; total: number };
@@ -21,27 +22,26 @@ export function DashboardFinanceBlock({ getCategoryBreakdown }: Props) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-foreground">Financeiro</h3>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMonth(addMonths(month, -1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium min-w-[80px] text-center">{label.short} {label.year}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMonth(addMonths(month, 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <BlockHeader
+        label="Gastos do mês"
+        action={
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon-sm" className="h-7 w-7" onClick={() => setMonth(addMonths(month, -1))} aria-label="Mês anterior">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="num min-w-[72px] text-center text-xs text-muted-foreground">{label.short} {label.year}</span>
+            <Button variant="ghost" size="icon-sm" className="h-7 w-7" onClick={() => setMonth(addMonths(month, 1))} aria-label="Próximo mês">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="text-center mb-4">
-        <p className="text-3xl font-bold text-foreground transition-all duration-300">{formatCurrency(total)}</p>
-        <p className="text-xs text-muted-foreground mt-1">Total do mês</p>
-      </div>
+      <p className="num mt-3 mb-5 text-3xl font-medium leading-none text-foreground">{formatCurrency(total)}</p>
 
-      {sorted.length > 0 && (
-        <div className="space-y-3 flex-1">
-          <div className="h-2.5 rounded-full overflow-hidden flex bg-secondary">
+      {sorted.length > 0 ? (
+        <div className="space-y-4 flex-1">
+          <div className="h-2 rounded-full overflow-hidden flex gap-[2px] bg-secondary">
             {sorted.map(([category, data]) => {
               const cat = getCategoryByKey(category);
               return (
@@ -54,29 +54,28 @@ export function DashboardFinanceBlock({ getCategoryBreakdown }: Props) {
             })}
           </div>
 
-          <div className="space-y-2">
+          <ul className="space-y-2">
             {sorted.map(([category, data]) => {
               const cat = getCategoryByKey(category);
               return (
-                <div key={category} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${cat?.barColor || 'bg-gray-500'}`} />
-                    <span className="text-muted-foreground">{cat?.icon} {cat?.label || category}</span>
+                <li key={category} className="flex items-center justify-between gap-3 text-sm">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div className={`w-2 h-2 shrink-0 rounded-full ${cat?.barColor || 'bg-gray-500'}`} />
+                    <span className="truncate text-muted-foreground">{cat?.icon} {cat?.label || category}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-foreground font-medium">{formatCurrency(data.amount)}</span>
-                    <span className="text-muted-foreground text-xs">{data.percentage}%</span>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="num text-foreground">{formatCurrency(data.amount)}</span>
+                    <span className="num w-9 text-right text-xs text-subtle">{data.percentage}%</span>
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
-      )}
-
-      {sorted.length === 0 && (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">Sem despesas neste mês</p>
+      ) : (
+        <div className="flex-1 flex flex-col justify-center">
+          <p className="text-sm font-medium text-foreground">Mês sem gastos</p>
+          <p className="mt-1 text-xs text-muted-foreground">Os gastos lançados no Financeiro aparecem aqui por categoria.</p>
         </div>
       )}
     </div>

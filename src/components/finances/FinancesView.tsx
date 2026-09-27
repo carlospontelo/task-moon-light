@@ -7,7 +7,8 @@ import { ExpenseForm } from './ExpenseForm';
 import { ExpenseEditDialog } from './ExpenseEditDialog';
 import { ExpenseDeleteDialog } from './ExpenseDeleteDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Receipt } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { PaymentMethodSummary } from './PaymentMethodSummary';
 
 interface FinancesViewProps {
@@ -75,16 +76,21 @@ export const FinancesView = memo(function FinancesView({
 
   return (
     <div className="space-y-6">
-      {/* Month Navigation */}
-      <div className="flex justify-center">
-        <MonthNavigator
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
-        />
-      </div>
+      <PageHeader
+        title="Financeiro"
+        description={<span className="capitalize">{monthLabel}</span>}
+        actions={
+          <div className="w-full min-w-0 md:w-auto md:max-w-[560px]">
+            <MonthNavigator
+              selectedMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+            />
+          </div>
+        }
+      />
 
       {/* Month Summary */}
-      <div className="p-6 rounded-2xl bg-secondary/30 border border-border">
+      <div className="p-5 sm:p-6 rounded-xl bg-card border border-border">
         <MonthSummary selectedMonth={selectedMonth} getCategoryBreakdown={getCategoryBreakdown} />
       </div>
 
@@ -93,14 +99,14 @@ export const FinancesView = memo(function FinancesView({
         {/* Mobile: Payment methods on top */}
         <div className="lg:hidden">
           {hasExpenses && (
-            <div className="p-5 rounded-2xl bg-secondary/30 border border-border">
+            <div className="p-5 rounded-xl bg-card border border-border">
               <PaymentMethodSummary expenses={allMonthExpenses} selectedMonth={selectedMonth} isPaid={isPaid} onTogglePaid={togglePaid} />
             </div>
           )}
         </div>
 
         {/* Left: Expense list (~65%) */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 space-y-4 rounded-xl border border-border bg-card p-3 sm:p-4 self-start">
           {hasExpenses ? (
             <>
               <ExpenseTypeGroup
@@ -129,7 +135,7 @@ export const FinancesView = memo(function FinancesView({
               />
 
               {!isPastMonth && (
-                <div className="flex justify-center pt-4">
+                <div className="flex justify-center border-t border-border pt-4">
                   <Button onClick={() => setFormOpen(true)} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Adicionar despesa
@@ -144,12 +150,11 @@ export const FinancesView = memo(function FinancesView({
               )}
             </>
           ) : (
-            <div className="text-center py-12">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-secondary mx-auto mb-4">
-                <Receipt className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="text-muted-foreground mb-1">Nenhuma despesa em</p>
-              <p className="font-medium text-foreground mb-4">{monthLabel}</p>
+            <div className="text-center py-12 px-4">
+              <p className="text-sm font-medium text-foreground mb-1">Sem despesas em <span className="capitalize">{monthLabel}</span></p>
+              <p className="text-sm text-muted-foreground mb-5">
+                {isPastMonth ? 'Nada foi lançado para este mês.' : 'Lance gastos fixos, parcelados ou avulsos para ver o resumo do mês.'}
+              </p>
               {!isPastMonth && (
                 <Button onClick={() => setFormOpen(true)} variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
@@ -162,7 +167,7 @@ export const FinancesView = memo(function FinancesView({
 
         {/* Right: Payment method summary (~35%), sticky on desktop */}
         <div className="hidden lg:block lg:col-span-2">
-          <div className="p-5 rounded-2xl bg-secondary/30 border border-border">
+          <div className="p-5 rounded-xl bg-card border border-border lg:sticky lg:top-6">
             <PaymentMethodSummary expenses={allMonthExpenses} selectedMonth={selectedMonth} isPaid={isPaid} onTogglePaid={togglePaid} />
           </div>
         </div>

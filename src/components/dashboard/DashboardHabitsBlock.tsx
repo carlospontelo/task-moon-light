@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft, ChevronRight, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { CHART, CHART_TOOLTIP_CLASS } from '@/lib/chart-theme';
+import { BlockHeader } from './BlockHeader';
 
 interface SortableHabitRowProps {
   habit: Habit;
@@ -31,20 +33,22 @@ function SortableHabitRow({ habit, daysInMonth, yearStr, monthStr, today, isComp
   };
 
   return (
-    <tr ref={setNodeRef} style={style} className={cn("group border-t border-border/50", isDragging && "opacity-50 bg-primary/5")}>
-      <td className="py-1.5 px-2 sticky left-0 bg-card">
+    <tr ref={setNodeRef} style={style} className={cn("group", isDragging && "opacity-50")}>
+      <td className="py-1 pr-3 pl-1 sticky left-0 z-10 bg-card">
         <div className="flex items-center gap-1.5">
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground transition-colors touch-none"
+            className="cursor-grab active:cursor-grabbing text-subtle hover:text-foreground transition-colors touch-none"
+            aria-label="Reordenar hábito"
           >
             <GripVertical className="h-3 w-3" />
           </button>
-          <span className="truncate text-foreground text-xs">{habit.name}</span>
+          <span className="truncate text-foreground text-[13px]">{habit.name}</span>
           <button
             onClick={() => deleteHabit(habit.id)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+            aria-label="Excluir hábito"
+            className="ml-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-subtle hover:text-destructive"
           >
             <Trash2 className="h-3 w-3" />
           </button>
@@ -56,15 +60,14 @@ function SortableHabitRow({ habit, daysInMonth, yearStr, monthStr, today, isComp
         const done = isCompleted(habit.id, dateStr);
         const isToday = dateStr === today;
         return (
-          <td key={i} className="text-center py-1.5 px-0.5">
+          <td key={i} className="text-center py-1 px-[2px]">
             <button
               onClick={() => toggleEntry(habit.id, dateStr)}
+              aria-label={`${habit.name}, dia ${day}${done ? ', concluído' : ''}`}
               className={cn(
-                "w-5 h-5 rounded-sm transition-all duration-200 border",
-                done
-                  ? "bg-primary/80 border-primary shadow-[0_0_6px_hsl(190_95%_55%_/_0.3)]"
-                  : "border-border/50 hover:border-primary/40",
-                isToday && !done && "border-primary/30"
+                "block mx-auto w-5 h-5 rounded-[4px] transition-colors duration-150",
+                done ? "bg-primary hover:bg-primary-hover" : "bg-secondary hover:bg-surface-3",
+                isToday && !done && "ring-1 ring-inset ring-primary/60"
               )}
             />
           </td>
@@ -112,43 +115,51 @@ export function DashboardHabitsBlock() {
   };
 
   const [yearStr, monthStr] = month.split('-');
+  // Single highlighted bar: today when viewing the current month, otherwise none.
+  const highlightDay = today.startsWith(`${yearStr}-${monthStr}`) ? Number(today.slice(8)) : null;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Hábitos</h3>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMonth(addMonths(month, -1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium min-w-[80px] text-center">{label.short} {label.year}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setMonth(addMonths(month, 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <BlockHeader
+        label="Hábitos"
+        action={
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon-sm" className="h-7 w-7" onClick={() => setMonth(addMonths(month, -1))} aria-label="Mês anterior">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="num min-w-[72px] text-center text-xs text-muted-foreground">{label.short} {label.year}</span>
+            <Button variant="ghost" size="icon-sm" className="h-7 w-7" onClick={() => setMonth(addMonths(month, 1))} aria-label="Próximo mês">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      />
 
       {/* Chart */}
       {habits.length > 0 && chartData.length > 0 && (
         <div className="h-[140px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -20 }}>
-              <defs>
-                <linearGradient id="habitGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(190, 95%, 55%)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(190, 95%, 55%)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 18%)" />
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'hsl(215, 15%, 55%)' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: 'hsl(215, 15%, 55%)' }} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
+            <BarChart data={chartData} margin={{ top: 5, right: 0, bottom: 0, left: -24 }} barCategoryGap="18%">
+              <CartesianGrid vertical={false} stroke={CHART.grid} strokeDasharray="2 4" />
+              <XAxis dataKey="day" tick={CHART.tick} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+              <YAxis tick={CHART.tick} tickLine={false} axisLine={false} domain={[0, 100]} ticks={[0, 50, 100]} unit="%" />
               <Tooltip
-                contentStyle={{ background: 'hsl(220, 18%, 12%)', border: '1px solid hsl(220, 15%, 18%)', borderRadius: 8, fontSize: 12 }}
-                labelFormatter={(v) => `Dia ${v}`}
-                formatter={(v: number) => [`${v}%`, 'Conclusão']}
+                cursor={{ fill: CHART.cursor, radius: 4 }}
+                content={({ active, payload, label: day }) =>
+                  active && payload?.length ? (
+                    <div className={CHART_TOOLTIP_CLASS}>
+                      <p className="text-subtle">Dia <span className="num">{day}</span></p>
+                      <p className="num mt-0.5 text-base text-primary">{payload[0].value}%</p>
+                    </div>
+                  ) : null
+                }
               />
-              <Area type="monotone" dataKey="rate" stroke="hsl(190, 95%, 55%)" fill="url(#habitGrad)" strokeWidth={2} />
-            </AreaChart>
+              <Bar dataKey="rate" radius={[4, 4, 4, 4]} minPointSize={2}>
+                {chartData.map(d => (
+                  <Cell key={d.day} fill={d.day === highlightDay ? CHART.barAccent : CHART.barMuted} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
@@ -159,10 +170,10 @@ export function DashboardHabitsBlock() {
           value={newHabit}
           onChange={(e) => setNewHabit(e.target.value)}
           placeholder="Novo hábito..."
-          className="h-8 text-sm"
+          className="h-9 text-sm"
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
         />
-        <Button size="sm" className="h-8 px-3" onClick={handleAdd} disabled={!newHabit.trim()}>
+        <Button variant="secondary" size="sm" className="h-9 px-3" onClick={handleAdd} disabled={!newHabit.trim()} aria-label="Adicionar hábito">
           <Plus className="h-3.5 w-3.5" />
         </Button>
       </div>
@@ -174,11 +185,11 @@ export function DashboardHabitsBlock() {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr>
-                  <th className="text-left text-muted-foreground font-medium py-2 px-2 sticky left-0 bg-card min-w-[120px]">
+                  <th className="text-left text-subtle font-normal py-2 pl-1 pr-3 sticky left-0 z-10 bg-card min-w-[140px]">
                     Hábito
                   </th>
                   {Array.from({ length: daysInMonth }, (_, i) => (
-                    <th key={i} className="text-center text-muted-foreground font-normal py-2 px-0.5 min-w-[28px]">
+                    <th key={i} className="num text-center text-subtle font-normal py-2 px-[2px] min-w-[24px] text-[10px]">
                       {i + 1}
                     </th>
                   ))}
@@ -207,9 +218,10 @@ export function DashboardHabitsBlock() {
       )}
 
       {habits.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          Adicione um hábito para começar a rastrear
-        </p>
+        <div className="py-6 text-center">
+          <p className="text-sm font-medium text-foreground">Nenhum hábito ainda</p>
+          <p className="mt-1 text-xs text-muted-foreground">Escreva um hábito acima e marque os dias em que cumpriu.</p>
+        </div>
       )}
     </div>
   );

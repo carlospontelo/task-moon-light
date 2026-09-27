@@ -14,11 +14,13 @@ interface TaskColumnProps {
   inProgressCount: number;
 }
 
-const GROUP_CONFIG: Record<BoardGroup, { icon: React.ReactNode; color: string }> = {
-  pinned: { icon: <Pin className="h-3.5 w-3.5" />, color: 'text-primary' },
-  today: { icon: <Sun className="h-3.5 w-3.5" />, color: 'text-amber-400' },
-  this_week: { icon: <CalendarDays className="h-3.5 w-3.5" />, color: 'text-blue-400' },
-  standby: { icon: <Pause className="h-3.5 w-3.5" />, color: 'text-muted-foreground' },
+const ICON = { className: 'h-3.5 w-3.5', strokeWidth: 1.5 };
+
+const GROUP_CONFIG: Record<BoardGroup, { icon: React.ReactNode }> = {
+  pinned: { icon: <Pin {...ICON} /> },
+  today: { icon: <Sun {...ICON} /> },
+  this_week: { icon: <CalendarDays {...ICON} /> },
+  standby: { icon: <Pause {...ICON} /> },
 };
 
 export function TaskColumn({ group, tasks, onUpdateStatus, onDelete, onEdit, inProgressCount }: TaskColumnProps) {
@@ -29,22 +31,22 @@ export function TaskColumn({ group, tasks, onUpdateStatus, onDelete, onEdit, inP
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col rounded-xl border border-border p-3 transition-all duration-200 min-h-[120px] bg-card/30",
-        isOver && "border-primary/40 bg-primary/5"
+        "flex flex-col rounded-xl border border-border p-2 transition-colors duration-150 min-h-[140px] bg-card",
+        isOver && "border-primary/60"
       )}
     >
-      <div className={cn("flex items-center gap-2 mb-3", config.color)}>
+      <div className="flex items-center gap-2 px-2 pt-1 pb-2.5 text-muted-foreground">
         {config.icon}
-        <h3 className="text-xs font-semibold uppercase tracking-wider">
+        <h3 className="text-xs font-medium uppercase tracking-[0.06em]">
           {BOARD_GROUP_LABELS[group]}
         </h3>
-        <span className="text-[11px] bg-secondary/50 px-1.5 py-0.5 rounded-full font-mono text-muted-foreground">
+        <span className="num ml-auto text-xs text-subtle">
           {tasks.length}
         </span>
       </div>
 
       <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-1 flex-1">
+        <div className="space-y-1.5 flex-1">
           {tasks.map((task) => (
             <TaskCard
               key={task.id}
@@ -59,8 +61,8 @@ export function TaskColumn({ group, tasks, onUpdateStatus, onDelete, onEdit, inP
       </SortableContext>
 
       {tasks.length === 0 && (
-        <div className="flex items-center justify-center flex-1 min-h-[60px] border border-dashed border-border/50 rounded-lg">
-          <p className="text-[11px] text-muted-foreground">Arraste tarefas aqui</p>
+        <div className="flex items-center justify-center flex-1 min-h-[64px] border border-dashed border-border-strong rounded-lg">
+          <p className="text-xs text-subtle">Arraste tarefas para cá</p>
         </div>
       )}
     </div>

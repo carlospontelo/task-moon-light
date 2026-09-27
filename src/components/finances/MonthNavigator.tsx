@@ -34,19 +34,20 @@ export function MonthNavigator({ selectedMonth, onMonthChange }: MonthNavigatorP
   };
 
   return (
-    <div className="relative flex items-center gap-2">
+    <div className="relative flex min-w-0 items-center gap-1">
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={() => scroll('left')}
-        className="shrink-0"
+        aria-label="Rolar meses para trás"
+        className="shrink-0 text-muted-foreground"
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
       <div
         ref={scrollRef}
-        className="flex gap-1 overflow-x-auto scrollbar-hide py-2 px-1"
+        className="flex min-w-0 flex-1 gap-1 overflow-x-auto scrollbar-hide py-1 px-1 [&::-webkit-scrollbar]:hidden"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {months.map((month) => {
@@ -61,23 +62,23 @@ export function MonthNavigator({ selectedMonth, onMonthChange }: MonthNavigatorP
               data-month={month}
               onClick={() => onMonthChange(month)}
               className={cn(
-                "flex flex-col items-center px-4 py-2 rounded-lg transition-all min-w-[60px]",
+                "relative flex flex-col items-center px-3 py-1.5 rounded-lg transition-colors min-w-[56px] cursor-pointer",
                 isSelected 
-                  ? "bg-primary text-primary-foreground" 
-                  : "hover:bg-secondary",
-                isPast && !isSelected && "text-muted-foreground",
-                isCurrent && !isSelected && "ring-1 ring-primary/30"
+                  ? "bg-secondary text-foreground border border-border-strong" 
+                  : "border border-transparent hover:bg-secondary",
+                isPast && !isSelected && "text-subtle",
+                isSelected && "after:absolute after:bottom-0 after:left-1/2 after:h-[2px] after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-primary"
               )}
             >
               <span className={cn(
-                "text-sm font-semibold",
-                isSelected ? "text-primary-foreground" : ""
+                "text-sm font-medium capitalize",
+                isCurrent && !isSelected && "text-primary"
               )}>
                 {short}
               </span>
               <span className={cn(
-                "text-xs",
-                isSelected ? "text-primary-foreground/80" : "text-muted-foreground"
+                "num text-[11px]",
+                isSelected ? "text-muted-foreground" : "text-subtle"
               )}>
                 {year}
               </span>
@@ -90,7 +91,8 @@ export function MonthNavigator({ selectedMonth, onMonthChange }: MonthNavigatorP
         variant="ghost"
         size="icon-sm"
         onClick={() => scroll('right')}
-        className="shrink-0"
+        aria-label="Rolar meses para frente"
+        className="shrink-0 text-muted-foreground"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>

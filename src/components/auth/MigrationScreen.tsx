@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { CheckSquare, Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
+import { BrandMark } from '@/components/layout/BrandMark';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -132,9 +133,7 @@ export function MigrationScreen({ onComplete }: MigrationScreenProps) {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md space-y-6 text-center">
         <div className="flex items-center justify-center">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20">
-            <CheckSquare className="h-6 w-6 text-primary" />
-          </div>
+          <BrandMark showText={false} />
         </div>
         <h2 className="text-xl font-semibold text-foreground">
           {status === 'migrating' ? 'Migrando seus dados...' : status === 'done' ? 'Migração concluída!' : 'Erro na migração'}
@@ -147,7 +146,7 @@ export function MigrationScreen({ onComplete }: MigrationScreenProps) {
             : 'Seus dados locais não foram alterados. Tente novamente.'}
         </p>
 
-        <div className="glass-card rounded-xl p-4 space-y-3 border border-border text-left">
+        <div className="rounded-xl p-4 space-y-3 border border-border bg-card text-left">
           {steps.map(({ key, label }) => (
             <div key={key} className="flex items-center gap-3">
               {progress[key] ? (

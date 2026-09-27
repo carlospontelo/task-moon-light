@@ -37,17 +37,17 @@ export function GoalCard({
   return (
     <div 
       className={cn(
-        "group p-4 rounded-xl border transition-all duration-200",
+        "group flex flex-col p-5 rounded-xl border bg-card transition-colors duration-150",
         isActive 
-          ? "bg-card border-border hover:border-primary/30" 
-          : "bg-card/50 border-border/50 opacity-80"
+          ? "border-border hover:border-border-strong" 
+          : "border-border opacity-70"
       )}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
           <h3 className={cn(
-            "font-medium text-foreground truncate",
+            "text-[15px] font-medium text-foreground truncate",
             !isActive && "text-muted-foreground"
           )}>
             {goal.title}
@@ -64,7 +64,8 @@ export function GoalCard({
             <Button 
               variant="ghost" 
               size="icon-sm" 
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Ações da meta"
+              className="-mr-2 -mt-1 text-subtle opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100 transition-opacity"
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -113,46 +114,46 @@ export function GoalCard({
       </div>
 
       {/* Tags */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        <Badge variant="outline" className={cn(areaColors.bg, areaColors.text, "border-none text-xs")}>
+      <div className="flex flex-wrap gap-1.5 mb-5">
+        <Badge variant="outline" className={cn(areaColors.bg, areaColors.text, "border-none")}>
           {GOAL_AREA_LABELS[goal.area]}
         </Badge>
-        <Badge variant="outline" className="bg-secondary/50 text-muted-foreground border-none text-xs">
+        <Badge variant="secondary">
           {GOAL_TYPE_LABELS[goal.type]}
         </Badge>
-        <Badge variant="outline" className="bg-secondary/50 text-muted-foreground border-none text-xs">
+        <Badge variant="secondary">
           {GOAL_ENERGY_ICONS[goal.energy]} {GOAL_ENERGY_LABELS[goal.energy]}
         </Badge>
       </div>
 
       {/* Progress */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
+      <div className="mt-auto space-y-2.5">
+        <div className="flex items-end justify-between gap-3">
+          <span className="text-xs text-muted-foreground">
             {linkedTasks.length > 0 
-              ? `${completedTasks}/${linkedTasks.length} tarefas`
+              ? <><span className="num">{completedTasks}/{linkedTasks.length}</span> tarefas</>
               : 'Sem tarefas vinculadas'
             }
           </span>
-          <span className="text-foreground font-mono">{goal.progress}%</span>
+          <span className="num text-2xl font-medium leading-none text-foreground">{goal.progress}<span className="text-sm text-subtle">%</span></span>
         </div>
-        <Progress value={goal.progress} className="h-1.5" />
+        <Progress value={goal.progress} className="h-1" />
       </div>
 
       {/* Linked Tasks Preview */}
       {linkedTasks.length > 0 && (
         <button
           onClick={onManageLinks}
-          className="mt-3 w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          className="mt-4 w-full text-left text-xs text-subtle hover:text-foreground transition-colors flex items-center gap-1.5 cursor-pointer"
         >
-          <Link2 className="h-3 w-3" />
-          Ver tarefas vinculadas →
+          <Link2 className="h-3 w-3" strokeWidth={1.5} />
+          Ver tarefas vinculadas
         </button>
       )}
 
       {/* Abandon reason */}
       {goal.status === 'abandoned' && goal.abandonReason && (
-        <p className="mt-3 text-xs text-muted-foreground italic border-t border-border/50 pt-2">
+        <p className="mt-4 text-xs text-muted-foreground border-t border-border pt-3">
           Motivo: {goal.abandonReason}
         </p>
       )}

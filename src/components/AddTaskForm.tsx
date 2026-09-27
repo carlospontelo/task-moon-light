@@ -47,9 +47,9 @@ export function AddTaskForm({ onAdd }: AddTaskFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Nova tarefa..."
-          className="flex-1 bg-secondary border-border focus:border-primary/50 h-11"
+          className="flex-1 h-11"
         />
-        <Button type="submit" variant="glow" className="h-11 px-4">
+        <Button type="submit" className="h-11 px-4">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">Adicionar</span>
         </Button>

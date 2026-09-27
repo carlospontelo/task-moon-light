@@ -61,23 +61,24 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
       {...attributes}
       {...listeners}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 cursor-grab active:cursor-grabbing touch-none",
-        "border border-transparent bg-card",
-        isInProgress && "bg-primary/5 border-primary/20",
+        "group relative flex items-start gap-2.5 px-2.5 py-2 rounded-lg transition-colors duration-150 cursor-grab active:cursor-grabbing touch-none",
+        "border border-border bg-secondary",
+        isInProgress && "border-primary/40",
         task.status === 'completed' && "opacity-50",
-        isDragging && "opacity-50 shadow-lg shadow-primary/20 border-primary/50 z-50",
-        !isInProgress && task.status !== 'completed' && "hover:bg-secondary/50"
+        isDragging && "opacity-40 border-primary z-50",
+        task.status !== 'completed' && "hover:bg-surface-3"
       )}
     >
       {/* Status toggle */}
       <button
         onClick={(e) => { e.stopPropagation(); cycleStatus(); }}
         onPointerDown={(e) => e.stopPropagation()}
+        aria-label="Alterar status"
         className={cn(
-          "flex-shrink-0 transition-colors",
-          task.status === 'pending' && "text-muted-foreground hover:text-foreground",
+          "mt-px flex-shrink-0 transition-colors",
+          task.status === 'pending' && "text-subtle hover:text-foreground",
           task.status === 'in_progress' && "text-primary",
-          task.status === 'completed' && "text-emerald-400",
+          task.status === 'completed' && "text-success",
         )}
       >
         {STATUS_ICON[task.status]}
@@ -86,21 +87,21 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
       {/* Content */}
       <div className="flex-1 min-w-0">
         <p className={cn(
-          "text-sm text-foreground leading-tight",
+          "text-[13px] text-foreground leading-snug",
           task.status === 'completed' && "line-through text-muted-foreground"
         )}>
           {task.title}
         </p>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            <span className="text-[11px] font-mono">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+          <div className="flex items-center gap-1 text-subtle">
+            <Calendar className="h-3 w-3" strokeWidth={1.5} />
+            <span className="num text-[11px]">
               {format(parseISO(task.date), "dd MMM", { locale: ptBR })}
             </span>
           </div>
           {tag && (
             <span className={cn(
-              "text-[11px] px-1.5 py-0.5 rounded-full font-medium",
+              "text-[10px] leading-none px-1.5 py-[3px] rounded-full font-medium",
               tag.bgColor,
               tag.textColor
             )}>
@@ -109,10 +110,10 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
           )}
           {progress.total > 0 && (
             <span className={cn(
-              "flex items-center gap-1 text-[11px]",
-              progress.completed === progress.total ? "text-emerald-400" : "text-muted-foreground"
+              "num flex items-center gap-1 text-[11px]",
+              progress.completed === progress.total ? "text-success" : "text-primary"
             )}>
-              <ListChecks className="h-3 w-3" />
+              <ListChecks className="h-3 w-3" strokeWidth={1.5} />
               {progress.completed}/{progress.total}
             </span>
           )}
@@ -120,15 +121,16 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-0.5 -my-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
         {task.status === 'pending' && (
           <Button
             variant="ghost"
             size="icon"
             onClick={(e) => { e.stopPropagation(); onUpdateStatus(task.id, 'in_progress'); }}
             onPointerDown={(e) => e.stopPropagation()}
-            className="h-7 w-7 text-muted-foreground hover:text-primary"
+            className="h-6 w-6 text-subtle hover:text-primary"
             title="Iniciar"
+            aria-label="Iniciar"
           >
             <Play className="h-3.5 w-3.5" />
           </Button>
@@ -138,8 +140,9 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
           size="icon"
           onClick={(e) => { e.stopPropagation(); onEdit(task); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+          className="h-6 w-6 text-subtle hover:text-foreground"
           title="Editar"
+          aria-label="Editar"
         >
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -148,8 +151,9 @@ export function TaskCard({ task, onUpdateStatus, onDelete, onEdit, inProgressCou
           size="icon"
           onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          className="h-6 w-6 text-subtle hover:text-destructive"
           title="Excluir"
+          aria-label="Excluir"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>

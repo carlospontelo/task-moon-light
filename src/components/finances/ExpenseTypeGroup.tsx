@@ -29,7 +29,8 @@ export function ExpenseTypeGroup({
     <div className="space-y-1">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between w-full py-2 px-1 hover:bg-secondary/50 rounded-lg transition-colors"
+        aria-expanded={isExpanded}
+        className="flex items-center justify-between w-full py-2 px-2 hover:bg-secondary rounded-lg transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2">
           {isExpanded ? (
@@ -37,21 +38,21 @@ export function ExpenseTypeGroup({
           ) : (
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           )}
-          <span className="text-sm font-semibold text-foreground">
+          <span className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">
             {EXPENSE_TYPE_LABELS[type]}
           </span>
-          <span className="text-xs text-muted-foreground">
-            ({expenses.length})
+          <span className="num text-xs text-subtle">
+            {expenses.length}
           </span>
         </div>
-        <span className="text-sm font-semibold text-foreground">
+        <span className="num text-sm text-foreground">
           {formatCurrency(total)}
         </span>
       </button>
 
       <div
         className={cn(
-          "pl-2 space-y-0.5 overflow-hidden transition-all",
+          "space-y-0.5 overflow-hidden transition-all",
           isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
         )}
       >

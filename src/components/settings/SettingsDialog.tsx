@@ -34,7 +34,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent className="sm:max-w-2xl max-h-[85vh] p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
           <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-primary" />
+            <Settings className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             Configurações
           </DialogTitle>
         </DialogHeader>
@@ -49,7 +49,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 className={cn(
                   "flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm transition-colors text-left",
                   activeSection === key
-                    ? "bg-primary/10 text-primary font-medium"
+                    ? "bg-secondary text-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
               >

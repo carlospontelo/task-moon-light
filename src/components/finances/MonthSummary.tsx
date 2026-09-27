@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { formatCurrency, addMonths, getMonthLabel } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
+import { CHART, CHART_TOOLTIP_CLASS } from '@/lib/chart-theme';
 
 const TAILWIND_COLOR_MAP: Record<string, string> = {
   'bg-blue-500': '#3b82f6',
@@ -151,14 +152,11 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
     const totalMonth = payload.reduce((s: number, p: any) => s + (p.value || 0), 0);
 
     return (
-      <div className="rounded-lg border px-3 py-2 text-xs" style={{
-        background: 'hsl(220, 18%, 12%)',
-        borderColor: 'hsl(220, 15%, 18%)',
-      }}>
-        <p className="font-medium text-foreground mb-1">
+      <div className={CHART_TOOLTIP_CLASS}>
+        <p className="font-medium text-foreground mb-1 capitalize">
           {monthEntry?.rawMonth ? getMonthLabel(monthEntry.rawMonth).full : label}
         </p>
-        <p className="text-muted-foreground mb-1.5">Total: {formatCurrency(totalMonth)}</p>
+        <p className="num text-base text-foreground mb-2">{formatCurrency(totalMonth)}</p>
         <div className="space-y-0.5">
           {payload.filter((p: any) => p.value > 0).reverse().map((p: any) => {
             const cat = getCategoryByKey(p.dataKey);
@@ -167,7 +165,7 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
               <div key={p.dataKey} className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full" style={{ background: p.fill }} />
                 <span className="text-muted-foreground">{displayName}</span>
-                <span className="ml-auto text-foreground">{formatCurrency(p.value)}</span>
+                <span className="num ml-auto pl-4 text-foreground">{formatCurrency(p.value)}</span>
               </div>
             );
           })}
@@ -178,9 +176,9 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
 
   if (total === 0 && barData.every((d) => stackKeys.every((k) => !d[k]))) {
     return (
-      <div className="text-center py-8">
-        <p className="text-3xl font-bold text-foreground">{formatCurrency(0)}</p>
-        <p className="text-sm text-muted-foreground mt-1">Total do mês</p>
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">Total do mês</p>
+        <p className="num mt-2 text-4xl font-medium text-foreground">{formatCurrency(0)}</p>
       </div>
     );
   }
@@ -188,12 +186,12 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
   return (
     <div className="space-y-6">
       {/* Total header */}
-      <div className="text-center">
-        <p className="text-3xl font-bold text-foreground">{formatCurrency(total)}</p>
-        <p className="text-sm text-muted-foreground mt-1">Total do mês</p>
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">Total do mês</p>
+        <p className="num mt-2 text-4xl font-medium leading-none text-foreground">{formatCurrency(total)}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
         {/* Left: Donut chart */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <div className="flex-shrink-0">
@@ -202,8 +200,8 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
                 <Pie
                   data={donutData}
                   dataKey="value"
-                  innerRadius="45%"
-                  outerRadius="85%"
+                  innerRadius="62%"
+                  outerRadius="92%"
                   paddingAngle={2}
                   strokeWidth={0}
                 >
@@ -216,16 +214,16 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
           </div>
 
           {/* Legend */}
-          <div className="flex flex-col gap-1.5 min-w-0">
+          <div className="flex flex-col gap-2 min-w-0 w-full">
             {donutData.map((entry) => (
               <div key={entry.key} className="flex items-center gap-2 text-xs">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: entry.color }} />
                 <span className="flex-shrink-0">{entry.icon}</span>
                 <span className="text-muted-foreground truncate">{entry.name}</span>
-                <span className="ml-auto text-foreground whitespace-nowrap font-medium">
+                <span className="num ml-auto text-foreground whitespace-nowrap">
                   {formatCurrency(entry.value)}
                 </span>
-                <span className="text-muted-foreground whitespace-nowrap">
+                <span className="num w-9 text-right text-subtle whitespace-nowrap">
                   {entry.percentage}%
                 </span>
               </div>
@@ -235,23 +233,24 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
 
         {/* Right: Stacked bar chart */}
         <div>
-          <p className="text-sm text-muted-foreground mb-3">Evolução por categoria</p>
+          <p className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground mb-4">Últimos 6 meses</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={barData} barCategoryGap="20%" maxBarSize={28}>
+            <BarChart data={barData} barCategoryGap="24%" maxBarSize={32}>
+              <CartesianGrid vertical={false} stroke={CHART.grid} strokeDasharray="2 4" />
               <XAxis
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }}
+                tick={CHART.tick}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatCompact}
-                tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }}
+                tick={CHART.tick}
                 width={40}
               />
-              <Tooltip content={<BarTooltipContent />} cursor={{ fill: 'hsl(220, 15%, 18%)', radius: 4 }} />
+              <Tooltip content={<BarTooltipContent />} cursor={{ fill: CHART.cursor, radius: 4 }} />
               {stackKeys.map((key) => (
                 <Bar
                   key={key}
