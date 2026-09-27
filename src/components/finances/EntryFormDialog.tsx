@@ -68,7 +68,7 @@ export function EntryFormDialog({ kind, open, onOpenChange, entry, onCreate, onU
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[420px]" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle className="text-base font-medium">
+          <DialogTitle>
             {editing ? `Editar ${copy.singular}` : copy.newLabel}
           </DialogTitle>
         </DialogHeader>

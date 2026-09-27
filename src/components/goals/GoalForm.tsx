@@ -126,7 +126,7 @@ export function GoalForm({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Editar Meta' : 'Nova Meta'}
+            {isEditing ? 'Editar meta' : 'Nova meta'}
           </DialogTitle>
           <DialogDescription>
             {isEditing 
@@ -144,7 +144,7 @@ export function GoalForm({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="title">Título</Label>
+            <Label htmlFor="title" className="text-xs font-medium text-muted-foreground">Título</Label>
             <Input
               id="title"
               value={title}
@@ -158,7 +158,7 @@ export function GoalForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição (opcional)</Label>
+            <Label htmlFor="description" className="text-xs font-medium text-muted-foreground">Descrição (opcional)</Label>
             <Textarea
               id="description"
               value={description}
@@ -171,7 +171,7 @@ export function GoalForm({
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label>Área</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Área</Label>
               <Select value={area} onValueChange={(v) => setArea(v as GoalArea)} disabled={!isEditing && !canAddMore}>
                 <SelectTrigger>
                   <SelectValue />
@@ -187,7 +187,7 @@ export function GoalForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Tipo</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Tipo</Label>
               <Select value={type} onValueChange={(v) => setType(v as GoalType)} disabled={!isEditing && !canAddMore}>
                 <SelectTrigger>
                   <SelectValue />
@@ -203,7 +203,7 @@ export function GoalForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Energia</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Energia</Label>
               <Select value={energy} onValueChange={(v) => setEnergy(v as GoalEnergy)} disabled={!isEditing && !canAddMore}>
                 <SelectTrigger>
                   <SelectValue />
@@ -228,7 +228,7 @@ export function GoalForm({
               Cancelar
             </Button>
             <Button type="submit" disabled={!isEditing && !canAddMore}>
-              {isEditing ? 'Salvar' : 'Criar Meta'}
+              {isEditing ? 'Salvar' : 'Criar meta'}
             </Button>
           </DialogFooter>
         </form>

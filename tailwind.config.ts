@@ -74,6 +74,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      boxShadow: {
+        // The only shadow in the app: floating layers (dialogs, popovers, menus, tooltips). Cards stay flat.
+        float: "0 16px 40px -16px rgb(0 0 0 / 0.75), 0 2px 8px -2px rgb(0 0 0 / 0.5)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

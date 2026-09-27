@@ -153,9 +153,9 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[400px] max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle className="text-sm font-medium text-foreground truncate">
+          <DialogTitle className="truncate pr-6">
             {task.title}
           </DialogTitle>
         </DialogHeader>
@@ -285,7 +285,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }}
                 placeholder="Nova subtarefa..."
-                className="h-8 text-sm"
+                className="h-9 text-sm"
               />
               <Button
                 variant="ghost"

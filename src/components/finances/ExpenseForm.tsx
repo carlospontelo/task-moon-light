@@ -96,9 +96,9 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
   };
 
   const typeOptions = [
-    { type: 'fixed' as ExpenseType, label: 'Despesa Fixa', description: 'Repete todo mês automaticamente', icon: RepeatIcon },
+    { type: 'fixed' as ExpenseType, label: 'Despesa fixa', description: 'Repete todo mês automaticamente', icon: RepeatIcon },
     { type: 'installment' as ExpenseType, label: 'Parcelamento', description: 'Divide em várias parcelas', icon: CreditCard },
-    { type: 'single' as ExpenseType, label: 'Despesa Única', description: 'Apenas este mês', icon: Receipt },
+    { type: 'single' as ExpenseType, label: 'Despesa única', description: 'Apenas este mês', icon: Receipt },
   ];
 
   return (
@@ -106,7 +106,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {step === 'type' ? 'Nova Despesa' : `Nova ${typeOptions.find(t => t.type === selectedType)?.label}`}
+            {step === 'type' ? 'Nova despesa' : `Nova ${typeOptions.find(t => t.type === selectedType)?.label.toLowerCase()}`}
           </DialogTitle>
           <DialogDescription>
             {step === 'type' ? 'Escolha o tipo de despesa para começar' : 'Preencha os detalhes da despesa'}
@@ -137,12 +137,12 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
+              <Label htmlFor="name" className="text-xs font-medium text-muted-foreground">Nome</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Aluguel, Netflix, Uber..." required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">{selectedType === 'installment' ? 'Valor da parcela' : 'Valor'}</Label>
+              <Label htmlFor="amount" className="text-xs font-medium text-muted-foreground">{selectedType === 'installment' ? 'Valor da parcela' : 'Valor'}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
                 <Input id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" className="pl-10" required />
@@ -151,7 +151,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
 
             {selectedType === 'installment' && (
               <div className="space-y-2">
-                <Label htmlFor="installments">Número de parcelas</Label>
+                <Label htmlFor="installments" className="text-xs font-medium text-muted-foreground">Número de parcelas</Label>
                 <Select value={installmentTotal} onValueChange={setInstallmentTotal}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -164,7 +164,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="startMonth">
+              <Label htmlFor="startMonth" className="text-xs font-medium text-muted-foreground">
                 {selectedType === 'single' ? 'Mês da despesa' : selectedType === 'installment' ? 'Mês da primeira parcela' : 'A partir de qual mês'}
               </Label>
               <Select value={startMonth} onValueChange={setStartMonth}>
@@ -179,7 +179,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
+              <Label htmlFor="category" className="text-xs font-medium text-muted-foreground">Categoria</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -191,7 +191,7 @@ export function ExpenseForm({ open, onOpenChange, onSubmit, initialMonth }: Expe
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Forma de pagamento</Label>
+              <Label htmlFor="paymentMethod" className="text-xs font-medium text-muted-foreground">Forma de pagamento</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger>
                 <SelectContent>

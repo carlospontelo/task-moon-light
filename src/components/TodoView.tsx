@@ -1,4 +1,4 @@
-import { useMemo, useState, memo } from 'react';
+import { useEffect, useMemo, useState, memo } from 'react';
 import {
   DndContext, DragEndEvent, DragStartEvent, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay,
 } from '@dnd-kit/core';
@@ -36,6 +36,19 @@ const COLUMNS: { status: TaskStatus; title: string; short: string; empty: string
 
 const bySortOrder = (a: Task, b: Task) => a.sortOrder - b.sortOrder;
 
+/** Matches Tailwind's `lg` breakpoint, so the chart only mounts where it's visible. */
+function useIsDesktop() {
+  const query = '(min-width: 1024px)';
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setMatches(mql.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+  return matches;
+}
+
 export const TodoView = memo(function TodoView({
   tasks, onAdd, onUpdateStatus, onUpdateTask, onDelete, onReorderTasks, hasCompletionTracking = false,
 }: TodoViewProps) {
@@ -44,6 +57,7 @@ export const TodoView = memo(function TodoView({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mobileColumn, setMobileColumn] = useState<TaskStatus>('pending');
   const isMobile = useIsMobile();
+  const isDesktop = useIsDesktop();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -104,14 +118,14 @@ export const TodoView = memo(function TodoView({
       />
 
       {/* Compact progress strip below the desktop breakpoint */}
-      <div className="lg:hidden">
+      {!isDesktop && (
         <ProgressPanel
           variant="strip"
           tasks={tasks}
           completedTodayCount={columns.completed.length}
           hasTracking={hasCompletionTracking}
         />
-      </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0 space-y-3">
@@ -170,15 +184,17 @@ export const TodoView = memo(function TodoView({
           </DndContext>
         </div>
 
-        <aside className="hidden lg:block">
-          <div className="lg:sticky lg:top-6">
-            <ProgressPanel
-              tasks={tasks}
-              completedTodayCount={columns.completed.length}
-              hasTracking={hasCompletionTracking}
-            />
-          </div>
-        </aside>
+        {isDesktop && (
+          <aside>
+            <div className="sticky top-6">
+              <ProgressPanel
+                tasks={tasks}
+                completedTodayCount={columns.completed.length}
+                hasTracking={hasCompletionTracking}
+              />
+            </div>
+          </aside>
+        )}
       </div>
 
       <NewTaskDialog open={newOpen} onOpenChange={setNewOpen} onAdd={onAdd} />

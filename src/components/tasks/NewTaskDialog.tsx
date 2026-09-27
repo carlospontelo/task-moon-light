@@ -48,7 +48,7 @@ export function NewTaskDialog({ open, onOpenChange, onAdd }: NewTaskDialogProps)
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[420px]" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle className="text-base font-medium">Nova tarefa</DialogTitle>
+          <DialogTitle>Nova tarefa</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -64,7 +64,7 @@ export function NewTaskDialog({ open, onOpenChange, onAdd }: NewTaskDialogProps)
           <div className="flex flex-wrap gap-2">
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
                   <CalendarIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {date ? <span className="num">{format(date, 'dd/MM', { locale: ptBR })}</span> : 'Prazo'}
                 </Button>
@@ -83,7 +83,7 @@ export function NewTaskDialog({ open, onOpenChange, onAdd }: NewTaskDialogProps)
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className={cn('h-8 gap-1.5 text-xs', selectedTag?.textColor)}>
+                <Button type="button" variant="outline" size="sm" className={cn('h-9 gap-1.5 text-xs', selectedTag?.textColor)}>
                   <Tag className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {selectedTag ? selectedTag.label : 'Tag'}
                 </Button>

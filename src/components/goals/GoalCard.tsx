@@ -87,7 +87,7 @@ export function GoalCard({
               <>
                 <DropdownMenuItem onClick={() => onStatusChange('completed')}>
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Marcar como Concluída
+                  Marcar como concluída
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onStatusChange('abandoned')}>
                   <XCircle className="h-4 w-4 mr-2" />
@@ -98,7 +98,7 @@ export function GoalCard({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onManageLinks}>
               <Link2 className="h-4 w-4 mr-2" />
-              Vincular Tarefas
+              Vincular tarefas
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onEdit}>
               <Pencil className="h-4 w-4 mr-2" />

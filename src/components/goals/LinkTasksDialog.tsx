@@ -68,7 +68,7 @@ export function LinkTasksDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Vincular Tarefas</DialogTitle>
+          <DialogTitle>Vincular tarefas</DialogTitle>
           <DialogDescription>Conecte tarefas do To-Do à meta "{goal.title}"</DialogDescription>
         </DialogHeader>
 

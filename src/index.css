@@ -72,6 +72,17 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }
+
+  /* Default keyboard focus for any element without its own ring (never the browser blue). */
+  :focus-visible {
+    outline: 1px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* One icon stroke across the app: lucide's default 2 becomes 1.5; explicit strokeWidth props are kept. */
+  svg.lucide[stroke-width="2"] {
+    stroke-width: 1.5;
+  }
 }
 
 @layer utilities {

@@ -13,9 +13,9 @@ import { DataSettings } from './DataSettings';
 type SettingsSection = 'tags' | 'categories' | 'payment' | 'preferences' | 'account' | 'data';
 
 const SECTIONS: { key: SettingsSection; label: string; icon: React.ReactNode }[] = [
-  { key: 'tags', label: 'Tags de Tarefas', icon: <Tag className="h-4 w-4" /> },
-  { key: 'categories', label: 'Categorias Financeiras', icon: <FolderOpen className="h-4 w-4" /> },
-  { key: 'payment', label: 'Formas de Pagamento', icon: <CreditCard className="h-4 w-4" /> },
+  { key: 'tags', label: 'Tags de tarefas', icon: <Tag className="h-4 w-4" /> },
+  { key: 'categories', label: 'Categorias financeiras', icon: <FolderOpen className="h-4 w-4" /> },
+  { key: 'payment', label: 'Formas de pagamento', icon: <CreditCard className="h-4 w-4" /> },
   { key: 'data', label: 'Importar / Exportar', icon: <Download className="h-4 w-4" /> },
   { key: 'preferences', label: 'Preferências', icon: <Sliders className="h-4 w-4" /> },
   { key: 'account', label: 'Conta', icon: <User className="h-4 w-4" /> },
@@ -31,10 +31,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] p-0 gap-0 overflow-hidden" aria-describedby={undefined}>
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
           <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+            <Settings className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             Configurações
           </DialogTitle>
         </DialogHeader>
