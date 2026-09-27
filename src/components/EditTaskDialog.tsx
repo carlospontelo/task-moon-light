@@ -227,18 +227,18 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
           {/* Status selector */}
           <div className="space-y-2">
             <label className="text-xs text-muted-foreground font-medium">Estado</label>
-            <RadioGroup value={status} onValueChange={(v) => setStatus(v as TaskStatus)} className="flex gap-2">
+            <RadioGroup value={status} onValueChange={(v) => setStatus(v as TaskStatus)} className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-secondary p-1">
               {([['pending', 'Não iniciada', Circle], ['in_progress', 'Em andamento', Loader2], ['completed', 'Concluída', CheckCircle2]] as const).map(([value, label, Icon]) => (
                 <Label
                   key={value}
                   htmlFor={`status-${value}`}
                   className={cn(
-                    "flex items-center gap-1.5 cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all",
-                    status === value ? "border-border-strong bg-secondary text-foreground" : "border-border text-muted-foreground hover:bg-secondary"
+                    "flex h-8 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 text-xs transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring",
+                    status === value ? "bg-surface-3 text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <RadioGroupItem value={value} id={`status-${value}`} className="sr-only" />
-                  <Icon className={cn("h-3.5 w-3.5", value === 'in_progress' && status === value && "motion-safe:animate-spin text-primary")} />
+                  <Icon aria-hidden className={cn("hidden h-3.5 w-3.5 shrink-0 sm:block", value === 'in_progress' && status === value && "motion-safe:animate-spin text-primary")} />
                   {label}
                 </Label>
               ))}
@@ -292,7 +292,8 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
                 size="icon"
                 onClick={handleAddSubtask}
                 disabled={!newSubtaskTitle.trim()}
-                className="h-8 w-8 flex-shrink-0"
+                aria-label="Adicionar subtarefa"
+                className="h-9 w-9 flex-shrink-0"
               >
                 <Plus className="h-4 w-4" />
               </Button>
