@@ -1,4 +1,4 @@
-import { Goal, GOAL_AREA_COLORS, GOAL_AREA_LABELS, GOAL_ENERGY_ICONS, GOAL_ENERGY_LABELS, GOAL_TYPE_LABELS, GoalStatus } from '@/types/goal';
+import { Goal, GOAL_AREA_COLORS, GOAL_AREA_LABELS, GOAL_ENERGY_LABELS, GOAL_TYPE_LABELS, GoalStatus } from '@/types/goal';
 import { Task } from '@/types/task';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pause, Play, CheckCircle2, XCircle, Link2, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EnergyIcon } from './EnergyIcon';
 
 interface GoalCardProps {
   goal: Goal;
@@ -122,7 +123,8 @@ export function GoalCard({
           {GOAL_TYPE_LABELS[goal.type]}
         </Badge>
         <Badge variant="secondary">
-          {GOAL_ENERGY_ICONS[goal.energy]} {GOAL_ENERGY_LABELS[goal.energy]}
+          <EnergyIcon energy={goal.energy} className="mr-1 h-3 w-3" />
+          {GOAL_ENERGY_LABELS[goal.energy]}
         </Badge>
       </div>
 

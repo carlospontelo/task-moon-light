@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { EnergyIcon } from './EnergyIcon';
 import {
   Select,
   SelectContent,
@@ -26,7 +27,6 @@ import {
   GOAL_AREA_LABELS,
   GOAL_TYPE_LABELS,
   GOAL_ENERGY_LABELS,
-  GOAL_ENERGY_ICONS,
   MAX_ACTIVE_GOALS,
 } from '@/types/goal';
 import { AlertCircle } from 'lucide-react';
@@ -211,7 +211,10 @@ export function GoalForm({
                 <SelectContent>
                   {Object.entries(GOAL_ENERGY_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
-                      {GOAL_ENERGY_ICONS[key as GoalEnergy]} {label}
+                      <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+                        <EnergyIcon energy={key as GoalEnergy} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{label}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

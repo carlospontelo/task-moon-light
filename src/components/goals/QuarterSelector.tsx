@@ -44,7 +44,7 @@ export function QuarterSelector({ value, onChange }: QuarterSelectorProps) {
       </Button>
       
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="num w-[140px]">
+        <SelectTrigger className="num w-[120px] sm:w-[140px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
