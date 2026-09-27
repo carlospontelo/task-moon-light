@@ -19,11 +19,14 @@ export function DashboardFinanceBlock({ getCategoryBreakdown, finance, onNavigat
   return (
     <div className="h-full flex flex-col">
       <BlockHeader
-        label={`Financeiro · ${label.short} ${label.year}`}
+        label="Financeiro"
         action={
-          <Button variant="secondary" size="icon-sm" onClick={onNavigateToFinances} aria-label="Abrir Financeiro" title="Abrir Financeiro">
-            <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
-          </Button>
+          <div className="flex items-center gap-3">
+            <span className="num text-xs text-subtle">{label.short} {label.year}</span>
+            <Button variant="secondary" size="icon-sm" onClick={onNavigateToFinances} aria-label="Abrir Financeiro" title="Abrir Financeiro">
+              <ArrowUpRight className="h-4 w-4" strokeWidth={1.5} />
+            </Button>
+          </div>
         }
       />
       <div className="mt-4">

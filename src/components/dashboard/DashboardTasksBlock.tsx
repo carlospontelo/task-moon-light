@@ -45,8 +45,15 @@ export function DashboardTasksBlock({ tasks, onUpdateStatus, onNavigateToTasks, 
 
       <div className="mt-3 mb-5 flex items-baseline gap-3">
         <span className="num text-5xl font-medium leading-none text-foreground">{loading ? '–' : doneToday}</span>
+        {/* Each segment wraps as a unit; orange only when something is actually in progress. */}
         <span className={cn('text-sm text-muted-foreground', loading && 'invisible')}>
-          {doneToday === 1 ? 'concluída hoje' : 'concluídas hoje'} · <span className="num text-primary">{inProgress.length}</span> em andamento · <span className="num">{todo.length}</span> a fazer
+          <span className="whitespace-nowrap">{doneToday === 1 ? 'concluída hoje' : 'concluídas hoje'}</span>
+          {' · '}
+          <span className="whitespace-nowrap">
+            <span className={cn('num', inProgress.length > 0 && 'text-primary')}>{inProgress.length}</span> em andamento
+          </span>
+          {' · '}
+          <span className="whitespace-nowrap"><span className="num">{todo.length}</span> a fazer</span>
         </span>
       </div>
 
