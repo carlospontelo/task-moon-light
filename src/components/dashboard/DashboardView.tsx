@@ -18,11 +18,12 @@ interface Props {
   getCategoryBreakdown: (month: string) => { breakdown: Record<string, { amount: number; percentage: number }>; total: number };
   finance: FinanceEntriesApi;
   onNavigateToFinances: () => void;
+  tasksLoading?: boolean;
 }
 
 const BLOCK = 'rounded-xl border border-border bg-card p-5 sm:p-6';
 
-export const DashboardView = memo(function DashboardView({ tasks, goals, onUpdateTaskStatus, onNavigateToTasks, getCategoryBreakdown, finance, onNavigateToFinances }: Props) {
+export const DashboardView = memo(function DashboardView({ tasks, goals, onUpdateTaskStatus, onNavigateToTasks, getCategoryBreakdown, finance, onNavigateToFinances, tasksLoading = false }: Props) {
   const todayLabel = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
@@ -39,6 +40,7 @@ export const DashboardView = memo(function DashboardView({ tasks, goals, onUpdat
             tasks={tasks}
             onUpdateStatus={onUpdateTaskStatus}
             onNavigateToTasks={onNavigateToTasks}
+            loading={tasksLoading}
           />
         </section>
         <div className="grid grid-cols-1 gap-4 lg:col-span-5">

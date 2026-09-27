@@ -26,6 +26,8 @@ interface TodoViewProps {
   onReorderTasks: (reordered: { id: string; sortOrder: number }[]) => void;
   /** `completed_at` exists in the DB (after the migration). */
   hasCompletionTracking?: boolean;
+  /** Tasks are still being fetched: show placeholders instead of empty columns. */
+  loading?: boolean;
 }
 
 const COLUMNS: { status: TaskStatus; title: string; short: string; empty: string }[] = [
@@ -50,7 +52,7 @@ function useIsDesktop() {
 }
 
 export const TodoView = memo(function TodoView({
-  tasks, onAdd, onUpdateStatus, onUpdateTask, onDelete, onReorderTasks, hasCompletionTracking = false,
+  tasks, onAdd, onUpdateStatus, onUpdateTask, onDelete, onReorderTasks, hasCompletionTracking = false, loading = false,
 }: TodoViewProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newOpen, setNewOpen] = useState(false);
@@ -169,6 +171,7 @@ export const TodoView = memo(function TodoView({
                   emptyText={isMobile && c.status === 'in_progress' ? 'Nenhuma tarefa em andamento' : c.empty}
                   dragDisabled={isMobile}
                   hideHeader={isMobile}
+                  loading={loading}
                   onSetStatus={setStatus}
                   onEdit={setEditingTask}
                   onDelete={onDelete}

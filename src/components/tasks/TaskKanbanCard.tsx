@@ -93,7 +93,7 @@ export function TaskKanbanCard({ task, onSetStatus, onEdit, onDelete, dragDisabl
           onClick={(e) => { stop(e); onEdit(task); }}
           className={cn(
             'min-w-0 flex-1 text-left text-[13px] leading-snug focus-visible:outline-none focus-visible:underline',
-            completed ? 'text-subtle line-through' : 'text-foreground',
+            completed ? 'text-muted-foreground line-through decoration-subtle' : 'text-foreground',
           )}
         >
           {task.title}

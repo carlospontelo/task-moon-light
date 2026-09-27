@@ -19,7 +19,7 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const [showMigration, setShowMigration] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
-  const { tasks, hasCompletionTracking, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, reorderTasks } = useTasks();
+  const { tasks, loading: tasksLoading, hasCompletionTracking, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, reorderTasks } = useTasks();
   const {
     expenses, addExpense, updateExpense, deleteExpense, togglePaid, isPaid,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
@@ -92,6 +92,7 @@ const Index = () => {
             tasks={tasks}
             goals={goals}
             onUpdateTaskStatus={updateTaskStatus}
+            tasksLoading={tasksLoading}
             onNavigateToTasks={() => setActiveTab('todo')}
             getCategoryBreakdown={getCategoryBreakdown}
             finance={finance}
@@ -108,6 +109,7 @@ const Index = () => {
             onDelete={deleteTask}
             onReorderTasks={reorderTasks}
             hasCompletionTracking={hasCompletionTracking}
+            loading={tasksLoading}
           />
         )}
         {activeTab === 'goals' && (
