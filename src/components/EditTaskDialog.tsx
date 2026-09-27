@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CalendarIcon, Tag, Layers, ListChecks, Plus, Trash2, GripVertical } from 'lucide-react';
+import { CalendarIcon, Tag, ListChecks, Plus, Trash2, GripVertical, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Task, TaskStatus, BoardGroup, BOARD_GROUP_LABELS } from '@/types/task';
+import { Task, TaskStatus, BoardGroup } from '@/types/task';
+import { createdDayKey, isFocus, isSomeday, FOCUS_LIMIT_MESSAGE } from '@/lib/task-sections';
 import { useSettings } from '@/contexts/SettingsContext';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -41,6 +42,22 @@ interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup; status?: TaskStatus }) => void;
+  /** Focus already holds the maximum number of tasks. */
+  focusFull?: boolean;
+}
+
+type Placement = 'list' | 'focus' | 'someday';
+
+const PLACEMENTS: { value: Placement; label: string }[] = [
+  { value: 'list', label: 'Lista' },
+  { value: 'focus', label: 'Foco' },
+  { value: 'someday', label: 'Algum dia' },
+];
+
+function placementOf(task: Task): Placement {
+  if (isFocus(task)) return 'focus';
+  if (isSomeday(task)) return 'someday';
+  return 'list';
 }
 
 function SortableSubtaskItem({ subtask, onToggle, onDelete }: { subtask: Subtask; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
@@ -86,12 +103,12 @@ function SortableSubtaskItem({ subtask, onToggle, onDelete }: { subtask: Subtask
   );
 }
 
-export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDialogProps) {
+export function EditTaskDialog({ task, open, onOpenChange, onSave, focusFull = false }: EditTaskDialogProps) {
   const { tags } = useSettings();
   const { getSubtasksByTaskId, getSubtaskProgress, addSubtask, toggleSubtask, deleteSubtask, reorderSubtasks } = useSubtasksContext();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string | undefined>(undefined);
-  const [boardGroup, setBoardGroup] = useState<BoardGroup>('today');
+  const [placement, setPlacement] = useState<Placement>('list');
   const [status, setStatus] = useState<TaskStatus>('pending');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -105,7 +122,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
   if (task && open && !initialized) {
     setDate(parseISO(task.date));
     setTag(task.tag);
-    setBoardGroup(task.boardGroup);
+    setPlacement(placementOf(task));
     setStatus(task.status);
     setInitialized(true);
   }
@@ -122,6 +139,12 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
 
   const handleSave = () => {
     if (!task || !date) return;
+    // Keep the original group when the task stays in the list (e.g. 'this_week').
+    const boardGroup: BoardGroup =
+      placement === 'focus' ? 'pinned'
+      : placement === 'someday' ? 'standby'
+      : task.boardGroup === 'pinned' || task.boardGroup === 'standby' ? 'today'
+      : task.boardGroup;
     onSave(task.id, {
       date: format(date, 'yyyy-MM-dd'),
       tag: tag || null,
@@ -149,6 +172,11 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
 
   if (!task) return null;
 
+  // A date equal to the creation day means "no due date" (see task-sections).
+  const createdDay = createdDayKey(task);
+  const noDueDate = !date || format(date, 'yyyy-MM-dd') === createdDay;
+  const focusBlocked = focusFull && placementOf(task) !== 'focus';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px] max-h-[85vh] overflow-y-auto">
@@ -164,9 +192,9 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
             <label className="text-xs text-muted-foreground font-medium">Prazo</label>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" className="w-full justify-start font-mono text-sm h-9">
+                <Button type="button" variant="outline" className={cn("w-full justify-start text-sm h-9", !noDueDate && "num")}>
                   <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                  {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : 'Selecionar data'}
+                  {noDueDate ? <span className="text-muted-foreground">Sem prazo</span> : format(date!, "dd/MM/yyyy", { locale: ptBR })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -180,6 +208,16 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
                 />
               </PopoverContent>
             </Popover>
+            {!noDueDate && (
+              <button
+                type="button"
+                onClick={() => setDate(parseISO(createdDay))}
+                className="flex items-center gap-1 text-xs text-subtle hover:text-foreground transition-colors"
+              >
+                <X className="h-3 w-3" />
+                Sem data
+              </button>
+            )}
           </div>
 
           {/* Tag selector */}
@@ -222,7 +260,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
                   htmlFor={`status-${value}`}
                   className={cn(
                     "flex items-center gap-1.5 cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all",
-                    status === value ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"
+                    status === value ? "border-border-strong bg-secondary text-foreground" : "border-border text-muted-foreground hover:bg-secondary"
                   )}
                 >
                   <RadioGroupItem value={value} id={`status-${value}`} className="sr-only" />
@@ -233,24 +271,33 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
             </RadioGroup>
           </div>
 
-          {/* Board group selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground font-medium">Contexto</label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="w-full justify-start text-sm h-9">
-                  <Layers className="h-4 w-4 mr-2 text-muted-foreground" />
-                  {BOARD_GROUP_LABELS[boardGroup]}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                {(Object.keys(BOARD_GROUP_LABELS) as BoardGroup[]).map((g) => (
-                  <DropdownMenuItem key={g} onSelect={() => setBoardGroup(g)}>
-                    <span className={cn(boardGroup === g && "font-semibold")}>{BOARD_GROUP_LABELS[g]}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Placement: list / focus / someday */}
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground font-medium">Onde fica</label>
+            <div role="radiogroup" className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-secondary p-1">
+              {PLACEMENTS.map(({ value, label }) => {
+                const disabled = value === 'focus' && focusBlocked;
+                const selected = placement === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    disabled={disabled}
+                    onClick={() => setPlacement(value)}
+                    className={cn(
+                      "h-8 rounded-md text-xs transition-colors",
+                      selected ? "bg-surface-3 text-foreground" : "text-muted-foreground hover:text-foreground",
+                      disabled && "cursor-not-allowed opacity-40 hover:text-muted-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {focusBlocked && <p className="text-[11px] text-subtle">{FOCUS_LIMIT_MESSAGE}</p>}
           </div>
 
           {/* Subtasks section */}
@@ -307,7 +354,7 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
             </div>
           </div>
 
-          <Button onClick={handleSave} variant="glow" className="w-full h-9">
+          <Button onClick={handleSave} className="w-full h-9">
             Salvar
           </Button>
         </div>

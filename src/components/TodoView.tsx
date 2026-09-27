@@ -1,13 +1,23 @@
-import { useMemo, useState, memo } from 'react';
-import { DndContext, DragEndEvent, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
+import { useMemo, useState, memo, type ReactNode } from 'react';
+import {
+  DndContext, DragEndEvent, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay, useDroppable,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { toast } from 'sonner';
 import { Task, TaskStatus, BoardGroup } from '@/types/task';
-import { TaskColumn } from './TaskColumn';
-import { TaskCard } from './TaskCard';
 import { AddTaskForm } from './AddTaskForm';
 import { EditTaskDialog } from './EditTaskDialog';
 import { PageHeader } from './layout/PageHeader';
-import { ChevronRight } from 'lucide-react';
+import { TaskListItem, type TaskActions } from './tasks/TaskListItem';
+import { FocusSection, FOCUS_DROP_ID } from './tasks/FocusSection';
+import { CollapsibleSection } from './tasks/CollapsibleSection';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { classifyTasks, isFocus, isSomeday, todayKey, FOCUS_LIMIT, FOCUS_LIMIT_MESSAGE } from '@/lib/task-sections';
 
 interface TodoViewProps {
   tasks: Task[];
@@ -17,159 +27,242 @@ interface TodoViewProps {
   onMoveTask: (id: string, group: BoardGroup) => void;
   onDelete: (id: string) => void;
   onReorderTasks: (reordered: { id: string; sortOrder: number }[]) => void;
+  /** Tasks linked to goals: kept by "Limpar concluídas" so goal progress stays correct. */
+  protectedTaskIds?: string[];
 }
 
-const GROUPS: BoardGroup[] = ['pinned', 'today', 'this_week', 'standby'];
+const LIST_DROP_ID = 'list-zone';
 
-export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete, onReorderTasks }: TodoViewProps) {
+function ListDropZone({ children }: { children: ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: LIST_DROP_ID });
+  return <div ref={setNodeRef} className="space-y-4">{children}</div>;
+}
+
+function SectionLabel({ children, tone = 'default' }: { children: ReactNode; tone?: 'default' | 'danger' }) {
+  return (
+    <h3 className={tone === 'danger'
+      ? 'px-2 pb-1 text-xs font-medium uppercase tracking-[0.06em] text-destructive'
+      : 'px-2 pb-1 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground'}
+    >
+      {children}
+    </h3>
+  );
+}
+
+export const TodoView = memo(function TodoView({
+  tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete, onReorderTasks, protectedTaskIds = [],
+}: TodoViewProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const isMobile = useIsMobile();
+  const today = todayKey();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const activeTasks = useMemo(() => tasks.filter(t => t.status !== 'completed'), [tasks]);
-  const completedTodayTasks = useMemo(() => tasks.filter(t => t.status === 'completed'), [tasks]);
-  const inProgressCount = useMemo(() => tasks.filter(t => t.status === 'in_progress').length, [tasks]);
-
-  const tasksByGroup = useMemo(() => {
-    const groups: Record<BoardGroup, Task[]> = { pinned: [], today: [], this_week: [], standby: [] };
-    activeTasks.forEach(task => {
-      const group = task.boardGroup || 'today';
-      if (groups[group]) groups[group].push(task);
-    });
-    // Sort each group by sortOrder
-    for (const key of Object.keys(groups) as BoardGroup[]) {
-      groups[key].sort((a, b) => a.sortOrder - b.sortOrder);
-    }
-    return groups;
-  }, [activeTasks]);
+  const sections = useMemo(() => classifyTasks(tasks, today), [tasks, today]);
+  const { focus, overdue, main, upcoming, someday, completed } = sections;
+  const focusIds = useMemo(() => new Set(focus.map(t => t.id)), [focus]);
+  const pendingCount = focus.length + overdue.length + main.length + upcoming.length;
+  const protectedSet = useMemo(() => new Set(protectedTaskIds), [protectedTaskIds]);
+  const clearable = completed.filter(t => !protectedSet.has(t.id));
+  const keptCount = completed.length - clearable.length;
 
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+  const focusTask = (task: Task) => {
+    if (focus.length >= FOCUS_LIMIT) {
+      toast(FOCUS_LIMIT_MESSAGE);
+      return;
+    }
+    onMoveTask(task.id, 'pinned');
   };
+
+  const actions: TaskActions = {
+    onUpdateStatus,
+    onEdit: setEditingTask,
+    onDelete,
+    onToggleFocus: (task) => (isFocus(task) ? onMoveTask(task.id, 'today') : focusTask(task)),
+    onToggleSomeday: (task) => onMoveTask(task.id, isSomeday(task) ? 'today' : 'standby'),
+  };
+
+  const reorder = (list: Task[], fromId: string, toId: string) => {
+    const oldIndex = list.findIndex(t => t.id === fromId);
+    const newIndex = list.findIndex(t => t.id === toId);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+    onReorderTasks(arrayMove(list, oldIndex, newIndex).map((t, i) => ({ id: t.id, sortOrder: i })));
+  };
+
+  const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id as string);
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     if (!over) return;
-
     const taskId = active.id as string;
     const overId = over.id as string;
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // Dropped on a column header
-    if (GROUPS.includes(overId as BoardGroup)) {
-      if (task.boardGroup !== overId) {
-        onMoveTask(taskId, overId as BoardGroup);
-      }
+    const fromFocus = focusIds.has(taskId);
+    const toFocus = overId === FOCUS_DROP_ID || focusIds.has(overId);
+
+    if (toFocus) {
+      if (fromFocus) reorder(focus, taskId, overId);
+      else focusTask(task);
       return;
     }
 
-    // Dropped on another task
-    const overTask = tasks.find(t => t.id === overId);
-    if (!overTask) return;
+    if (fromFocus) {
+      // Dragged out of focus into the list.
+      onMoveTask(taskId, 'today');
+      return;
+    }
 
-    if (task.boardGroup !== overTask.boardGroup) {
-      // Move to different column
-      onMoveTask(taskId, overTask.boardGroup);
-    } else {
-      // Reorder within same column
-      const group = task.boardGroup;
-      const groupTasks = [...tasksByGroup[group]];
-      const oldIndex = groupTasks.findIndex(t => t.id === taskId);
-      const newIndex = groupTasks.findIndex(t => t.id === overId);
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const reordered = arrayMove(groupTasks, oldIndex, newIndex);
-        const updates = reordered.map((t, i) => ({ id: t.id, sortOrder: i }));
-        onReorderTasks(updates);
-      }
+    // Manual order only applies to the default list; dated sections are sorted by date.
+    if (main.some(t => t.id === taskId) && main.some(t => t.id === overId)) {
+      reorder(main, taskId, overId);
     }
   };
 
-  const activeCount = activeTasks.length;
+  const renderList = (list: Task[]) => (
+    <SortableContext items={list.map(t => t.id)} strategy={verticalListSortingStrategy}>
+      <div className="space-y-0.5">
+        {list.map(task => (
+          <TaskListItem key={task.id} task={task} dragDisabled={isMobile} today={today} {...actions} />
+        ))}
+      </div>
+    </SortableContext>
+  );
+
+  const listEmpty = overdue.length + main.length + upcoming.length === 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="mx-auto max-w-3xl space-y-6 animate-fade-in">
       <PageHeader
         title="Tarefas"
         description={
           <>
-            <span className="num">{activeCount}</span> {activeCount === 1 ? 'tarefa ativa' : 'tarefas ativas'}
-            {inProgressCount > 0 && <> · <span className="num text-primary">{inProgressCount}</span> em andamento</>}
+            <span className="num text-foreground">{pendingCount}</span> {pendingCount === 1 ? 'pendente' : 'pendentes'}
           </>
         }
       />
 
-      <div className="rounded-xl border border-border bg-card p-4">
-        <AddTaskForm onAdd={onAdd} />
-      </div>
+      <AddTaskForm onAdd={onAdd} />
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
-          {GROUPS.map(group => (
-            <TaskColumn
-              key={group}
-              group={group}
-              tasks={tasksByGroup[group]}
-              onUpdateStatus={onUpdateStatus}
-              onDelete={onDelete}
-              onEdit={setEditingTask}
-              inProgressCount={inProgressCount}
-            />
-          ))}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
+        <FocusSection
+          tasks={focus}
+          isDraggingIn={!!activeId && !focusIds.has(activeId)}
+          dragDisabled={isMobile}
+          today={today}
+          {...actions}
+        />
+
+        <ListDropZone>
+          {overdue.length > 0 && (
+            <div>
+              <SectionLabel tone="danger">Atrasadas</SectionLabel>
+              {renderList(overdue)}
+            </div>
+          )}
+
+          {main.length > 0 && renderList(main)}
+
+          {upcoming.length > 0 && (
+            <div>
+              <SectionLabel>Próximas</SectionLabel>
+              {renderList(upcoming)}
+            </div>
+          )}
+
+          {listEmpty && (
+            <div className="rounded-xl border border-dashed border-border-strong px-6 py-10 text-center">
+              <p className="text-sm font-medium text-foreground">Nada pendente</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Escreva uma tarefa no campo acima e pressione Enter.
+              </p>
+            </div>
+          )}
+        </ListDropZone>
+
+        <div className="space-y-2">
+          {someday.length > 0 && (
+            <CollapsibleSection title="Algum dia" count={someday.length}>
+              <SortableContext items={[]}>
+                <div className="space-y-0.5">
+                  {someday.map(task => (
+                    <TaskListItem key={task.id} task={task} dragDisabled today={today} {...actions} />
+                  ))}
+                </div>
+              </SortableContext>
+            </CollapsibleSection>
+          )}
+
+          {completed.length > 0 && (
+            <CollapsibleSection
+              title="Concluídas"
+              count={completed.length}
+              action={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-subtle hover:text-destructive"
+                  onClick={() => setConfirmClear(true)}
+                  disabled={clearable.length === 0}
+                >
+                  Limpar concluídas
+                </Button>
+              }
+            >
+              <SortableContext items={[]}>
+                <div className="space-y-0.5">
+                  {completed.map(task => (
+                    <TaskListItem key={task.id} task={task} dragDisabled today={today} {...actions} />
+                  ))}
+                </div>
+              </SortableContext>
+            </CollapsibleSection>
+          )}
         </div>
 
         <DragOverlay>
           {activeTask ? (
-            <div className="bg-surface-3 border border-primary rounded-lg px-3 py-2.5">
+            <div className="rounded-lg border border-primary bg-surface-3 px-3 py-2.5">
               <p className="text-sm text-foreground">{activeTask.title}</p>
             </div>
           ) : null}
         </DragOverlay>
       </DndContext>
 
-      {/* Completed tasks - today only */}
-      {completedTodayTasks.length > 0 && (
-        <details className="group">
-          <summary className="flex items-center gap-2 cursor-pointer list-none text-xs text-muted-foreground uppercase tracking-[0.06em] font-medium py-2 select-none [&::-webkit-details-marker]:hidden">
-            <ChevronRight className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
-            Concluídas hoje
-            <span className="num text-subtle">
-              {completedTodayTasks.length}
-            </span>
-          </summary>
-          <div className="mt-1 divide-y divide-border rounded-xl border border-border bg-card">
-            {completedTodayTasks.map(task => (
-              <div key={task.id} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="text-success text-sm" aria-hidden>✓</span>
-                <p className="text-sm line-through text-subtle">{task.title}</p>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-
-      {tasks.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-sm font-medium text-foreground">Quadro vazio</p>
-          <p className="text-sm text-muted-foreground mt-1">Escreva a primeira tarefa no campo acima e escolha em qual coluna ela entra.</p>
-        </div>
-      )}
+      <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar {clearable.length} {clearable.length === 1 ? 'tarefa concluída' : 'tarefas concluídas'}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Elas serão excluídas de vez.
+              {keptCount > 0 && ` ${keptCount} ${keptCount === 1 ? 'tarefa vinculada' : 'tarefas vinculadas'} a metas ${keptCount === 1 ? 'será mantida' : 'serão mantidas'} para não alterar o progresso.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clearable.forEach(t => onDelete(t.id))}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <EditTaskDialog
         task={editingTask}
         open={!!editingTask}
         onOpenChange={(open) => { if (!open) setEditingTask(null); }}
+        focusFull={focus.length >= FOCUS_LIMIT}
         onSave={(id, updates) => {
           const { status, ...rest } = updates;
           onUpdateTask(id, rest);

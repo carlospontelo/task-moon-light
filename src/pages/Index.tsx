@@ -103,6 +103,7 @@ const Index = () => {
             onMoveTask={moveTask}
             onDelete={deleteTask}
             onReorderTasks={reorderTasks}
+            protectedTaskIds={goals.flatMap(g => g.linkedTaskIds)}
           />
         )}
         {activeTab === 'goals' && (

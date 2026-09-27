@@ -1,15 +1,14 @@
 /* @refresh reset */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Task, TaskStatus, BoardGroup } from '@/types/task';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { format, startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 
 export function useTasks() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const cleanupDone = useRef(false);
 
   const mapRow = (t: any): Task => ({
     id: t.id,
@@ -22,14 +21,6 @@ export function useTasks() {
     boardGroup: (t.board_group as BoardGroup) || 'today',
     sortOrder: t.sort_order ?? 0,
   });
-
-  // Cleanup runs once on mount
-  useEffect(() => {
-    if (!user || cleanupDone.current) return;
-    cleanupDone.current = true;
-    const today = format(startOfDay(new Date()), 'yyyy-MM-dd');
-    supabase.from('tasks').delete().eq('user_id', user.id).eq('status', 'completed').lt('date', today).then();
-  }, [user]);
 
   const fetchTasks = useCallback(async () => {
     if (!user) { setTasks([]); setLoading(false); return; }
