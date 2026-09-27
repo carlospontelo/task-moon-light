@@ -164,10 +164,10 @@ export function SummaryTab({ month, getCategoryBreakdown, finance, onGoToIncome 
         {/* Where the money went */}
         <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
           <h2 className={LABEL}>Para onde foi o dinheiro</h2>
-          <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row">
+          <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row xl:flex-col xl:items-stretch">
             <PieChart
               data={slices}
-              className="h-[180px] w-[180px] shrink-0"
+              className="h-[160px] w-[160px] shrink-0 xl:mx-auto"
               formatValue={formatCurrency}
               center={
                 <>
@@ -176,17 +176,17 @@ export function SummaryTab({ month, getCategoryBreakdown, finance, onGoToIncome 
                 </>
               }
             />
-            <ul className="w-full space-y-3">
+            <ul className="w-full min-w-0 flex-1 space-y-3">
               {[
                 { key: 'expenses', name: 'Gastos', value: totals.expenses, color: SUMMARY_COLORS.expenses },
                 { key: 'invested', name: 'Investido', value: totals.invested, color: SUMMARY_COLORS.invested },
                 ...(!hasIncome || negative ? [] : [{ key: 'left', name: 'Sobrou', value: totals.left, color: SUMMARY_COLORS.left, hatched: true }]),
               ].map(row => (
-                <li key={row.key} className="flex items-center gap-2.5 text-sm">
+                <li key={row.key} className="flex min-w-0 items-center gap-2.5 text-sm">
                   <Swatch id={`legend-${row.key}`} color={row.color} hatched={'hatched' in row && row.hatched} />
-                  <span className="text-muted-foreground">{row.name}</span>
-                  <span className="num ml-auto text-foreground">{formatCurrency(row.value)}</span>
-                  <span className="num w-11 text-right text-subtle">{pct(row.value, pctBase)}%</span>
+                  <span className="min-w-0 truncate text-muted-foreground">{row.name}</span>
+                  <span className="num ml-auto shrink-0 whitespace-nowrap text-foreground">{formatCurrency(row.value)}</span>
+                  <span className="num w-9 shrink-0 text-right text-subtle">{pct(row.value, pctBase)}%</span>
                 </li>
               ))}
             </ul>

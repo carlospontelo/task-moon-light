@@ -45,7 +45,7 @@ export function ExpenseTypeGroup({
             {expenses.length}
           </span>
         </div>
-        <span className="num text-sm text-foreground">
+        <span className={cn('num text-sm text-foreground', !isReadOnly && 'mr-9')}>
           {formatCurrency(total)}
         </span>
       </button>

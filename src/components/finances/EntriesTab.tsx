@@ -57,7 +57,7 @@ export function EntriesTab({ kind, month, finance }: EntriesTabProps) {
   return (
     <div className="space-y-4">
       <section className="flex flex-col gap-5 rounded-xl border border-border bg-card p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
-        <div className="flex flex-wrap gap-x-10 gap-y-4">
+        <div className="flex flex-wrap items-start gap-x-10 gap-y-4">
           <div>
             <p className={LABEL}>{kind === 'income' ? 'Entrou no mês' : 'Investido no mês'}</p>
             <NumberFlow value={monthTotal / 100} format={BRL} locales="pt-BR" className="num mt-2 text-4xl font-medium text-foreground" />
@@ -65,7 +65,7 @@ export function EntriesTab({ kind, month, finance }: EntriesTabProps) {
           {kind === 'investment' && (
             <div>
               <p className={LABEL}>Acumulado em {year}</p>
-              <NumberFlow value={yearToDate / 100} format={BRL} locales="pt-BR" className="num mt-2 text-4xl font-medium text-muted-foreground" />
+              <NumberFlow value={yearToDate / 100} format={BRL} locales="pt-BR" className="num mt-2 text-2xl font-medium text-foreground sm:text-[28px]" />
             </div>
           )}
         </div>
@@ -106,7 +106,7 @@ export function EntriesTab({ kind, month, finance }: EntriesTabProps) {
             </Button>
           </div>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="space-y-0.5">
             {list.map(entry => (
               <li key={entry.id} className="group flex items-center justify-between gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-secondary">
                 <div className="flex min-w-0 items-center gap-2">
