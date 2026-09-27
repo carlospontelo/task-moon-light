@@ -2,22 +2,24 @@ import { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useGoals } from '@/hooks/useGoals';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useFinanceEntries } from '@/hooks/useFinanceEntries';
 import { useAuth } from '@/contexts/AuthContext';
-import { TabNavigation, TabType } from '@/components/TabNavigation';
+import { AppShell } from '@/components/layout/AppShell';
+import type { TabType } from '@/components/layout/nav-items';
 import { TodoView } from '@/components/TodoView';
 import { GoalsView } from '@/components/goals/GoalsView';
 import { FinancesView } from '@/components/finances/FinancesView';
 import { DashboardView } from '@/components/dashboard/DashboardView';
 import { AuthPage } from '@/components/auth/AuthPage';
 import { MigrationScreen, hasLocalData, isMigrationDone } from '@/components/auth/MigrationScreen';
-import { SettingsDialog, SettingsButton } from '@/components/settings/SettingsDialog';
-import { CheckSquare, Loader2 } from 'lucide-react';
+import { SettingsDialog } from '@/components/settings/SettingsDialog';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [showMigration, setShowMigration] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
-  const { tasks, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, reorderTasks } = useTasks();
+  const { tasks, loading: tasksLoading, hasCompletionTracking, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, reorderTasks } = useTasks();
   const {
     expenses, addExpense, updateExpense, deleteExpense, togglePaid, isPaid,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
@@ -26,6 +28,7 @@ const Index = () => {
     goals, addGoal, updateGoalStatus, updateGoal, deleteGoal,
     linkTask, unlinkTask, getLinkedTasks, getUnlinkedTasks, getActiveGoalsCount,
   } = useGoals(tasks);
+  const finance = useFinanceEntries();
 
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -76,76 +79,53 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div
-        className="fixed inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px),
-                           linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
-        }}
-      />
-
-      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <header className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 border border-primary/20">
-              <CheckSquare className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">TaskFlow</h2>
-              <p className="text-xs text-muted-foreground font-mono">Organize seu dia</p>
-            </div>
-          </div>
-          <SettingsButton onClick={() => setSettingsOpen(true)} />
-        </header>
-
-        <div className="mb-8">
-          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
-
-        <main>
-          {activeTab === 'dashboard' && (
-            <DashboardView
-              tasks={tasks}
-              goals={goals}
-              onUpdateTaskStatus={updateTaskStatus}
-              onNavigateToTasks={() => setActiveTab('todo')}
-              getCategoryBreakdown={getCategoryBreakdown}
-            />
-          )}
-          {activeTab === 'todo' && (
-            <TodoView
-              tasks={tasks}
-              onAdd={addTask}
-              onUpdateStatus={updateTaskStatus}
-              onUpdateTask={updateTask}
-              onMoveTask={moveTask}
-              onDelete={deleteTask}
-              onReorderTasks={reorderTasks}
-            />
-          )}
-          {activeTab === 'goals' && (
-            <GoalsView goals={goals} tasks={tasks} addGoal={addGoal} updateGoalStatus={updateGoalStatus}
-              updateGoal={updateGoal} deleteGoal={deleteGoal} linkTask={linkTask} unlinkTask={unlinkTask}
-              getLinkedTasks={getLinkedTasks} getUnlinkedTasks={getUnlinkedTasks} getActiveGoalsCount={getActiveGoalsCount} />
-          )}
-          {activeTab === 'finances' && (
-            <FinancesView expenses={expenses} addExpense={addExpense} updateExpense={updateExpense}
-              deleteExpense={deleteExpense} togglePaid={togglePaid} isPaid={isPaid} getExpensesByMonthAndType={getExpensesByMonthAndType}
-              getCategoryBreakdown={getCategoryBreakdown} getTypeTotal={getTypeTotal} />
-          )}
-        </main>
-
-        <footer className="mt-16 pt-8 border-t border-border">
-          <p className="text-center text-xs text-muted-foreground font-mono">
-            TaskFlow • {new Date().getFullYear()}
-          </p>
-        </footer>
-      </div>
+    <>
+      <AppShell
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onSignOut={signOut}
+        userEmail={user.email}
+      >
+        {activeTab === 'dashboard' && (
+          <DashboardView
+            tasks={tasks}
+            goals={goals}
+            onUpdateTaskStatus={updateTaskStatus}
+            tasksLoading={tasksLoading}
+            onNavigateToTasks={() => setActiveTab('todo')}
+            getCategoryBreakdown={getCategoryBreakdown}
+            finance={finance}
+            onNavigateToFinances={() => setActiveTab('finances')}
+          />
+        )}
+        {activeTab === 'todo' && (
+          <TodoView
+            tasks={tasks}
+            onAdd={addTask}
+            onUpdateStatus={updateTaskStatus}
+            onUpdateTask={updateTask}
+            onMoveTask={moveTask}
+            onDelete={deleteTask}
+            onReorderTasks={reorderTasks}
+            hasCompletionTracking={hasCompletionTracking}
+            loading={tasksLoading}
+          />
+        )}
+        {activeTab === 'goals' && (
+          <GoalsView goals={goals} tasks={tasks} addGoal={addGoal} updateGoalStatus={updateGoalStatus}
+            updateGoal={updateGoal} deleteGoal={deleteGoal} linkTask={linkTask} unlinkTask={unlinkTask}
+            getLinkedTasks={getLinkedTasks} getUnlinkedTasks={getUnlinkedTasks} getActiveGoalsCount={getActiveGoalsCount} />
+        )}
+        {activeTab === 'finances' && (
+          <FinancesView expenses={expenses} addExpense={addExpense} updateExpense={updateExpense}
+            deleteExpense={deleteExpense} togglePaid={togglePaid} isPaid={isPaid} getExpensesByMonthAndType={getExpensesByMonthAndType}
+            getCategoryBreakdown={getCategoryBreakdown} getTypeTotal={getTypeTotal} finance={finance} />
+        )}
+      </AppShell>
 
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
-    </div>
+    </>
   );
 };
 

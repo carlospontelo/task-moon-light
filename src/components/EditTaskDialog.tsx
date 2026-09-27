@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CalendarIcon, Tag, Layers, ListChecks, Plus, Trash2, GripVertical } from 'lucide-react';
+import { CalendarIcon, Tag, ListChecks, Plus, Trash2, GripVertical, X } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Task, TaskStatus, BoardGroup, BOARD_GROUP_LABELS } from '@/types/task';
+import { Task, TaskStatus, BoardGroup } from '@/types/task';
+import { createdDayKey } from '@/lib/task-stats';
 import { useSettings } from '@/contexts/SettingsContext';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -91,7 +92,6 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
   const { getSubtasksByTaskId, getSubtaskProgress, addSubtask, toggleSubtask, deleteSubtask, reorderSubtasks } = useSubtasksContext();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string | undefined>(undefined);
-  const [boardGroup, setBoardGroup] = useState<BoardGroup>('today');
   const [status, setStatus] = useState<TaskStatus>('pending');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -105,7 +105,6 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
   if (task && open && !initialized) {
     setDate(parseISO(task.date));
     setTag(task.tag);
-    setBoardGroup(task.boardGroup);
     setStatus(task.status);
     setInitialized(true);
   }
@@ -125,7 +124,6 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
     onSave(task.id, {
       date: format(date, 'yyyy-MM-dd'),
       tag: tag || null,
-      boardGroup,
       status,
     });
     onOpenChange(false);
@@ -149,11 +147,15 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
 
   if (!task) return null;
 
+  // A date equal to the creation day means "no deadline".
+  const createdDay = createdDayKey(task);
+  const noDueDate = !date || format(date, 'yyyy-MM-dd') === createdDay;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[400px] max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle className="text-sm font-medium text-foreground truncate">
+          <DialogTitle className="truncate pr-6">
             {task.title}
           </DialogTitle>
         </DialogHeader>
@@ -164,9 +166,9 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
             <label className="text-xs text-muted-foreground font-medium">Prazo</label>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
-                <Button type="button" variant="outline" className="w-full justify-start font-mono text-sm h-9">
+                <Button type="button" variant="outline" className={cn("w-full justify-start text-sm h-9", !noDueDate && "num")}>
                   <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                  {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : 'Selecionar data'}
+                  {noDueDate ? <span className="text-muted-foreground">Sem prazo</span> : format(date!, "dd/MM/yyyy", { locale: ptBR })}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -180,6 +182,16 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
                 />
               </PopoverContent>
             </Popover>
+            {!noDueDate && (
+              <button
+                type="button"
+                onClick={() => setDate(parseISO(createdDay))}
+                className="flex items-center gap-1 text-xs text-subtle hover:text-foreground transition-colors"
+              >
+                <X className="h-3 w-3" />
+                Sem data
+              </button>
+            )}
           </div>
 
           {/* Tag selector */}
@@ -215,42 +227,22 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
           {/* Status selector */}
           <div className="space-y-2">
             <label className="text-xs text-muted-foreground font-medium">Estado</label>
-            <RadioGroup value={status} onValueChange={(v) => setStatus(v as TaskStatus)} className="flex gap-2">
+            <RadioGroup value={status} onValueChange={(v) => setStatus(v as TaskStatus)} className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-secondary p-1">
               {([['pending', 'Não iniciada', Circle], ['in_progress', 'Em andamento', Loader2], ['completed', 'Concluída', CheckCircle2]] as const).map(([value, label, Icon]) => (
                 <Label
                   key={value}
                   htmlFor={`status-${value}`}
                   className={cn(
-                    "flex items-center gap-1.5 cursor-pointer rounded-lg border px-3 py-2 text-xs transition-all",
-                    status === value ? "border-primary bg-primary/10 text-foreground" : "border-border text-muted-foreground hover:border-primary/40"
+                    "flex h-8 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 text-xs transition-colors has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring",
+                    status === value ? "bg-surface-3 text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <RadioGroupItem value={value} id={`status-${value}`} className="sr-only" />
-                  <Icon className={cn("h-3.5 w-3.5", value === 'in_progress' && status === value && "animate-spin")} />
+                  <Icon aria-hidden className={cn("hidden h-3.5 w-3.5 shrink-0 sm:block", value === 'in_progress' && status === value && "motion-safe:animate-spin text-primary")} />
                   {label}
                 </Label>
               ))}
             </RadioGroup>
-          </div>
-
-          {/* Board group selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground font-medium">Contexto</label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" className="w-full justify-start text-sm h-9">
-                  <Layers className="h-4 w-4 mr-2 text-muted-foreground" />
-                  {BOARD_GROUP_LABELS[boardGroup]}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                {(Object.keys(BOARD_GROUP_LABELS) as BoardGroup[]).map((g) => (
-                  <DropdownMenuItem key={g} onSelect={() => setBoardGroup(g)}>
-                    <span className={cn(boardGroup === g && "font-semibold")}>{BOARD_GROUP_LABELS[g]}</span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
 
           {/* Subtasks section */}
@@ -293,21 +285,22 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDia
                 onChange={(e) => setNewSubtaskTitle(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask(); } }}
                 placeholder="Nova subtarefa..."
-                className="h-8 text-sm"
+                className="h-9 text-sm"
               />
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleAddSubtask}
                 disabled={!newSubtaskTitle.trim()}
-                className="h-8 w-8 flex-shrink-0"
+                aria-label="Adicionar subtarefa"
+                className="h-9 w-9 flex-shrink-0"
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          <Button onClick={handleSave} variant="glow" className="w-full h-9">
+          <Button onClick={handleSave} className="w-full h-9">
             Salvar
           </Button>
         </div>

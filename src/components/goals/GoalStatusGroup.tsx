@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Goal, GOAL_STATUS_ICONS, GOAL_STATUS_LABELS, GoalStatus } from '@/types/goal';
+import { Goal, GOAL_STATUS_LABELS, GoalStatus } from '@/types/goal';
 import { Task } from '@/types/task';
 import { GoalCard } from './GoalCard';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -34,24 +34,24 @@ export function GoalStatusGroup({
     <div className="space-y-3">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+        aria-expanded={isOpen}
+        className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground hover:text-foreground transition-colors w-full cursor-pointer"
       >
         {isOpen ? (
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="h-3.5 w-3.5" />
         ) : (
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5" />
         )}
-        <span>{GOAL_STATUS_ICONS[status]}</span>
         <span>{GOAL_STATUS_LABELS[status]}</span>
-        <span className="text-xs bg-secondary px-2 py-0.5 rounded-full">
+        <span className="num text-subtle">
           {goals.length}
         </span>
       </button>
 
       <div
         className={cn(
-          "space-y-3 overflow-hidden transition-all duration-200",
-          isOpen ? "opacity-100" : "h-0 opacity-0"
+          "grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 transition-opacity duration-200",
+          isOpen ? "opacity-100" : "hidden"
         )}
       >
         {goals.map((goal) => (

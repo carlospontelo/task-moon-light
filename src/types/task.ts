@@ -25,4 +25,6 @@ export interface Task {
   pinned: boolean;
   boardGroup: BoardGroup;
   sortOrder: number;
+  /** When the task was completed. undefined = column not available yet (pre-migration). */
+  completedAt?: string | null;
 }

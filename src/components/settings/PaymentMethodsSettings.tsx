@@ -70,7 +70,7 @@ export function PaymentMethodsSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Formas de Pagamento</h3>
+          <h3 className="text-sm font-semibold text-foreground">Formas de pagamento</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Gerencie os tipos de pagamento disponíveis</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setIsAdding(true)} className="gap-1.5">
@@ -120,7 +120,7 @@ export function PaymentMethodsSettings() {
           <div key={pm.id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-secondary/50 group">
             {editingId === pm.id ? (
               <div className="flex-1 space-y-2">
-                <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="h-8" />
+                <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="h-9" />
                 <div>
                   <p className="text-xs text-muted-foreground mb-1.5">Ícone</p>
                   <Popover open={editEmojiOpen} onOpenChange={setEditEmojiOpen}>

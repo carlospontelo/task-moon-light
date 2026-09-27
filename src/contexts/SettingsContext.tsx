@@ -52,7 +52,6 @@ const DEFAULT_CATEGORIES: Omit<CustomCategory, 'id'>[] = [
   { key: 'work', label: 'Trabalho', icon: '💼', barColor: 'bg-slate-500' },
   { key: 'education', label: 'Educação', icon: '📚', barColor: 'bg-purple-500' },
   { key: 'shopping', label: 'Compras', icon: '🛒', barColor: 'bg-amber-500' },
-  { key: 'investments', label: 'Investimentos', icon: '📈', barColor: 'bg-emerald-500' },
   { key: 'other', label: 'Outros', icon: '📦', barColor: 'bg-gray-500' },
 ];
 

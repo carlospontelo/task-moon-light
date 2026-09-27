@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { EnergyIcon } from './EnergyIcon';
 import {
   Select,
   SelectContent,
@@ -26,7 +27,6 @@ import {
   GOAL_AREA_LABELS,
   GOAL_TYPE_LABELS,
   GOAL_ENERGY_LABELS,
-  GOAL_ENERGY_ICONS,
   MAX_ACTIVE_GOALS,
 } from '@/types/goal';
 import { AlertCircle } from 'lucide-react';
@@ -126,7 +126,7 @@ export function GoalForm({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Editar Meta' : 'Nova Meta'}
+            {isEditing ? 'Editar meta' : 'Nova meta'}
           </DialogTitle>
           <DialogDescription>
             {isEditing 
@@ -144,7 +144,7 @@ export function GoalForm({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="title">Título</Label>
+            <Label htmlFor="title" className="text-xs font-medium text-muted-foreground">Título</Label>
             <Input
               id="title"
               value={title}
@@ -158,7 +158,7 @@ export function GoalForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição (opcional)</Label>
+            <Label htmlFor="description" className="text-xs font-medium text-muted-foreground">Descrição (opcional)</Label>
             <Textarea
               id="description"
               value={description}
@@ -171,7 +171,7 @@ export function GoalForm({
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label>Área</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Área</Label>
               <Select value={area} onValueChange={(v) => setArea(v as GoalArea)} disabled={!isEditing && !canAddMore}>
                 <SelectTrigger>
                   <SelectValue />
@@ -187,7 +187,7 @@ export function GoalForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Tipo</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Tipo</Label>
               <Select value={type} onValueChange={(v) => setType(v as GoalType)} disabled={!isEditing && !canAddMore}>
                 <SelectTrigger>
                   <SelectValue />
@@ -203,7 +203,7 @@ export function GoalForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Energia</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Energia</Label>
               <Select value={energy} onValueChange={(v) => setEnergy(v as GoalEnergy)} disabled={!isEditing && !canAddMore}>
                 <SelectTrigger>
                   <SelectValue />
@@ -211,7 +211,10 @@ export function GoalForm({
                 <SelectContent>
                   {Object.entries(GOAL_ENERGY_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
-                      {GOAL_ENERGY_ICONS[key as GoalEnergy]} {label}
+                      <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
+                        <EnergyIcon energy={key as GoalEnergy} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{label}</span>
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -228,7 +231,7 @@ export function GoalForm({
               Cancelar
             </Button>
             <Button type="submit" disabled={!isEditing && !canAddMore}>
-              {isEditing ? 'Salvar' : 'Criar Meta'}
+              {isEditing ? 'Salvar' : 'Criar meta'}
             </Button>
           </DialogFooter>
         </form>

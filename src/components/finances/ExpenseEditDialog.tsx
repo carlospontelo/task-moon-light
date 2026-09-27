@@ -68,18 +68,18 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Editar Despesa</DialogTitle>
+          <DialogTitle>Editar despesa</DialogTitle>
           <DialogDescription>Atualize os detalhes da despesa</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="edit-name">Nome</Label>
+            <Label htmlFor="edit-name" className="text-xs font-medium text-muted-foreground">Nome</Label>
             <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-amount">Valor</Label>
+            <Label htmlFor="edit-amount" className="text-xs font-medium text-muted-foreground">Valor</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R$</span>
               <Input id="edit-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="pl-10" required />
@@ -87,7 +87,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-category">Categoria</Label>
+            <Label htmlFor="edit-category" className="text-xs font-medium text-muted-foreground">Categoria</Label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -99,7 +99,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-paymentMethod">Forma de pagamento</Label>
+            <Label htmlFor="edit-paymentMethod" className="text-xs font-medium text-muted-foreground">Forma de pagamento</Label>
             <Select value={paymentMethod} onValueChange={setPaymentMethod}>
               <SelectTrigger><SelectValue placeholder="Selecione (opcional)" /></SelectTrigger>
               <SelectContent>
@@ -112,7 +112,7 @@ export function ExpenseEditDialog({ expense, open, onOpenChange, onSave }: Expen
 
           {showScopeOptions && (
             <div className="space-y-3">
-              <Label>Aplicar alteração em:</Label>
+              <Label className="text-xs font-medium text-muted-foreground">Aplicar alteração em:</Label>
               <RadioGroup value={scope} onValueChange={(v) => setScope(v as typeof scope)}>
                 {expense?.type === 'fixed' && (
                   <>

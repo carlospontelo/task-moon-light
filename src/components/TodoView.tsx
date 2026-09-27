@@ -1,11 +1,20 @@
-import { useMemo, useState, memo } from 'react';
-import { DndContext, DragEndEvent, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { useEffect, useMemo, useState, memo } from 'react';
+import {
+  DndContext, DragEndEvent, DragStartEvent, closestCorners, PointerSensor, useSensor, useSensors, DragOverlay,
+} from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
+import { Plus } from 'lucide-react';
 import { Task, TaskStatus, BoardGroup } from '@/types/task';
-import { TaskColumn } from './TaskColumn';
-import { TaskCard } from './TaskCard';
-import { AddTaskForm } from './AddTaskForm';
 import { EditTaskDialog } from './EditTaskDialog';
+import { PageHeader } from './layout/PageHeader';
+import { KanbanColumn } from './tasks/KanbanColumn';
+import { TaskKanbanCard } from './tasks/TaskKanbanCard';
+import { ProgressPanel } from './tasks/ProgressPanel';
+import { NewTaskDialog } from './tasks/NewTaskDialog';
+import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { completedToday, logStatusChange } from '@/lib/task-stats';
+import { cn } from '@/lib/utils';
 
 interface TodoViewProps {
   tasks: Task[];
@@ -15,150 +24,183 @@ interface TodoViewProps {
   onMoveTask: (id: string, group: BoardGroup) => void;
   onDelete: (id: string) => void;
   onReorderTasks: (reordered: { id: string; sortOrder: number }[]) => void;
+  /** `completed_at` exists in the DB (after the migration). */
+  hasCompletionTracking?: boolean;
+  /** Tasks are still being fetched: show placeholders instead of empty columns. */
+  loading?: boolean;
 }
 
-const GROUPS: BoardGroup[] = ['pinned', 'today', 'this_week', 'standby'];
+const COLUMNS: { status: TaskStatus; title: string; short: string; empty: string }[] = [
+  { status: 'pending', title: 'A fazer', short: 'A fazer', empty: 'Nenhuma tarefa a fazer' },
+  { status: 'in_progress', title: 'Em andamento', short: 'Em andamento', empty: 'Arraste uma tarefa para começar' },
+  { status: 'completed', title: 'Concluídas hoje', short: 'Concluídas', empty: 'Nada concluído hoje ainda' },
+];
 
-export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, onUpdateTask, onMoveTask, onDelete, onReorderTasks }: TodoViewProps) {
+const bySortOrder = (a: Task, b: Task) => a.sortOrder - b.sortOrder;
+
+/** Matches Tailwind's `lg` breakpoint, so the chart only mounts where it's visible. */
+function useIsDesktop() {
+  const query = '(min-width: 1024px)';
+  const [matches, setMatches] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setMatches(mql.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+  return matches;
+}
+
+export const TodoView = memo(function TodoView({
+  tasks, onAdd, onUpdateStatus, onUpdateTask, onDelete, onReorderTasks, hasCompletionTracking = false, loading = false,
+}: TodoViewProps) {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [mobileColumn, setMobileColumn] = useState<TaskStatus>('pending');
+  const isMobile = useIsMobile();
+  const isDesktop = useIsDesktop();
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const activeTasks = useMemo(() => tasks.filter(t => t.status !== 'completed'), [tasks]);
-  const completedTodayTasks = useMemo(() => tasks.filter(t => t.status === 'completed'), [tasks]);
-  const inProgressCount = useMemo(() => tasks.filter(t => t.status === 'in_progress').length, [tasks]);
+  const columns = useMemo(() => {
+    const doneToday = completedToday(tasks).sort(bySortOrder);
+    return {
+      pending: tasks.filter(t => t.status === 'pending').sort(bySortOrder),
+      in_progress: tasks.filter(t => t.status === 'in_progress').sort(bySortOrder),
+      completed: doneToday,
+    } satisfies Record<TaskStatus, Task[]>;
+  }, [tasks]);
 
-  const tasksByGroup = useMemo(() => {
-    const groups: Record<BoardGroup, Task[]> = { pinned: [], today: [], this_week: [], standby: [] };
-    activeTasks.forEach(task => {
-      const group = task.boardGroup || 'today';
-      if (groups[group]) groups[group].push(task);
-    });
-    // Sort each group by sortOrder
-    for (const key of Object.keys(groups) as BoardGroup[]) {
-      groups[key].sort((a, b) => a.sortOrder - b.sortOrder);
-    }
-    return groups;
-  }, [activeTasks]);
+  const setStatus = (id: string, status: TaskStatus) => {
+    logStatusChange(id, status);
+    onUpdateStatus(id, status);
+  };
 
-  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+  const columnOf = (id: string): TaskStatus | null => {
+    if (id.startsWith('column:')) return id.slice('column:'.length) as TaskStatus;
+    return tasks.find(t => t.id === id)?.status ?? null;
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     if (!over) return;
-
     const taskId = active.id as string;
     const overId = over.id as string;
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    const from = columnOf(taskId);
+    const to = columnOf(overId);
+    if (!from || !to) return;
 
-    // Dropped on a column header
-    if (GROUPS.includes(overId as BoardGroup)) {
-      if (task.boardGroup !== overId) {
-        onMoveTask(taskId, overId as BoardGroup);
-      }
+    if (from !== to) {
+      setStatus(taskId, to);
       return;
     }
 
-    // Dropped on another task
-    const overTask = tasks.find(t => t.id === overId);
-    if (!overTask) return;
-
-    if (task.boardGroup !== overTask.boardGroup) {
-      // Move to different column
-      onMoveTask(taskId, overTask.boardGroup);
-    } else {
-      // Reorder within same column
-      const group = task.boardGroup;
-      const groupTasks = [...tasksByGroup[group]];
-      const oldIndex = groupTasks.findIndex(t => t.id === taskId);
-      const newIndex = groupTasks.findIndex(t => t.id === overId);
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const reordered = arrayMove(groupTasks, oldIndex, newIndex);
-        const updates = reordered.map((t, i) => ({ id: t.id, sortOrder: i }));
-        onReorderTasks(updates);
-      }
-    }
+    const list = columns[from];
+    const oldIndex = list.findIndex(t => t.id === taskId);
+    const newIndex = list.findIndex(t => t.id === overId);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+    onReorderTasks(arrayMove(list, oldIndex, newIndex).map((t, i) => ({ id: t.id, sortOrder: i })));
   };
 
-  const activeCount = activeTasks.length;
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+  const visibleColumns = isMobile ? COLUMNS.filter(c => c.status === mobileColumn) : COLUMNS;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-semibold text-foreground">Tarefas</h1>
-        <p className="text-sm text-muted-foreground">
-          {activeCount} {activeCount === 1 ? 'tarefa ativa' : 'tarefas ativas'}
-          {inProgressCount > 0 && <span className="text-primary"> • {inProgressCount} em andamento</span>}
-        </p>
+      <PageHeader
+        title="Tarefas"
+        actions={
+          <Button onClick={() => setNewOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nova tarefa
+          </Button>
+        }
+      />
+
+      {/* Compact progress strip below the desktop breakpoint */}
+      {!isDesktop && (
+        <ProgressPanel
+          variant="strip"
+          tasks={tasks}
+          completedTodayCount={columns.completed.length}
+          hasTracking={hasCompletionTracking}
+        />
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0 space-y-3">
+          {isMobile && (
+            <div role="tablist" aria-label="Colunas" className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1">
+              {COLUMNS.map(c => {
+                const selected = mobileColumn === c.status;
+                return (
+                  <button
+                    key={c.status}
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => setMobileColumn(c.status)}
+                    className={cn(
+                      'flex h-9 items-center justify-center gap-1.5 rounded-md text-xs transition-colors',
+                      selected ? 'bg-secondary text-foreground' : 'text-muted-foreground',
+                    )}
+                  >
+                    {c.short}
+                    <span className="num text-subtle">{columns[c.status].length}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={(e: DragStartEvent) => setActiveId(e.active.id as string)}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setActiveId(null)}
+          >
+            <div className={cn('grid gap-3', !isMobile && 'grid-cols-3')}>
+              {visibleColumns.map(c => (
+                <KanbanColumn
+                  key={c.status}
+                  status={c.status}
+                  title={c.title}
+                  tasks={columns[c.status]}
+                  emptyText={isMobile && c.status === 'in_progress' ? 'Nenhuma tarefa em andamento' : c.empty}
+                  dragDisabled={isMobile}
+                  hideHeader={isMobile}
+                  loading={loading}
+                  onSetStatus={setStatus}
+                  onEdit={setEditingTask}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
+
+            <DragOverlay>
+              {activeTask ? (
+                <TaskKanbanCard task={activeTask} overlay onSetStatus={() => {}} onEdit={() => {}} onDelete={() => {}} />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
+
+        {isDesktop && (
+          <aside>
+            <div className="sticky top-6">
+              <ProgressPanel
+                tasks={tasks}
+                completedTodayCount={columns.completed.length}
+                hasTracking={hasCompletionTracking}
+              />
+            </div>
+          </aside>
+        )}
       </div>
 
-      <AddTaskForm onAdd={onAdd} />
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="space-y-4">
-          {GROUPS.map(group => (
-            <TaskColumn
-              key={group}
-              group={group}
-              tasks={tasksByGroup[group]}
-              onUpdateStatus={onUpdateStatus}
-              onDelete={onDelete}
-              onEdit={setEditingTask}
-              inProgressCount={inProgressCount}
-            />
-          ))}
-        </div>
-
-        <DragOverlay>
-          {activeTask ? (
-            <div className="bg-card border border-primary/30 rounded-lg px-3 py-2.5 shadow-xl shadow-primary/10">
-              <p className="text-sm text-foreground">{activeTask.title}</p>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-
-      {/* Completed tasks - today only */}
-      {completedTodayTasks.length > 0 && (
-        <details className="group">
-          <summary className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground uppercase tracking-wider font-semibold py-2 select-none">
-            <span className="transition-transform group-open:rotate-90">▶</span>
-            Concluídas hoje
-            <span className="bg-secondary/50 px-1.5 py-0.5 rounded-full font-mono">
-              {completedTodayTasks.length}
-            </span>
-          </summary>
-          <div className="space-y-1 mt-2 opacity-50">
-            {completedTodayTasks.map(task => (
-              <div key={task.id} className="flex items-center gap-3 px-3 py-2 rounded-lg">
-                <span className="text-emerald-400">✓</span>
-                <p className="text-sm line-through text-muted-foreground">{task.title}</p>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
-
-      {tasks.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-muted-foreground">Nenhuma tarefa ainda</p>
-          <p className="text-sm text-muted-foreground/70 mt-1">Adicione sua primeira tarefa acima</p>
-        </div>
-      )}
+      <NewTaskDialog open={newOpen} onOpenChange={setNewOpen} onAdd={onAdd} />
 
       <EditTaskDialog
         task={editingTask}
@@ -167,7 +209,8 @@ export const TodoView = memo(function TodoView({ tasks, onAdd, onUpdateStatus, o
         onSave={(id, updates) => {
           const { status, ...rest } = updates;
           onUpdateTask(id, rest);
-          if (status) onUpdateStatus(id, status);
+          const current = tasks.find(t => t.id === id)?.status;
+          if (status && status !== current) setStatus(id, status);
         }}
       />
     </div>

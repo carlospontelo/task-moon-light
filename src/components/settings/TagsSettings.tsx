@@ -88,7 +88,7 @@ function SortableTagItem({
 
       {isEditing ? (
         <div className="flex-1 space-y-2">
-          <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="h-8" />
+          <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="h-9" />
           <div className="flex flex-wrap gap-1.5">
             {COLOR_OPTIONS.map(c => (
               <button key={c.bg} onClick={() => { setEditBg(c.bg); setEditText(c.text); }}
@@ -183,7 +183,7 @@ export function TagsSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Tags de Tarefas</h3>
+          <h3 className="text-sm font-semibold text-foreground">Tags de tarefas</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Arraste para reordenar, edite cores e nomes</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setIsAdding(true)} className="gap-1.5">

@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useCallback, useMemo } from 'react';
+import { BarChart, Bar, Rectangle, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, type RectangleProps } from 'recharts';
+import { PieChart } from '@/components/spectrumui/charts/pie-chart';
 import { formatCurrency, addMonths, getMonthLabel } from '@/types/expense';
 import { useSettings } from '@/contexts/SettingsContext';
+import { CHART, CHART_TOOLTIP_CLASS } from '@/lib/chart-theme';
 
 const TAILWIND_COLOR_MAP: Record<string, string> = {
   'bg-blue-500': '#3b82f6',
@@ -37,107 +39,68 @@ interface MonthSummaryProps {
   };
 }
 
-const OTHERS_COLOR = '#6b7280';
-const OTHERS_KEY = '_others';
-const OTHERS_LABEL = 'Demais categorias';
-const OTHERS_BAR_LABEL = 'Demais';
+const FALLBACK_COLOR = getHexColor('bg-gray-500');
+
+interface MonthRow {
+  month: string;
+  rawMonth: string;
+  total: number;
+  [categoryKey: string]: number | string;
+}
 
 export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSummaryProps) {
-  const { getCategoryByKey } = useSettings();
+  const { categories, getCategoryByKey } = useSettings();
 
   const { breakdown, total } = getCategoryBreakdown(selectedMonth);
 
-  // Build donut data with smart "others" handling
+  const categoryInfo = useCallback((key: string) => {
+    const cat = getCategoryByKey(key);
+    return {
+      name: cat?.label || key,
+      icon: cat?.icon || '📦',
+      color: cat ? getHexColor(cat.barColor) : FALLBACK_COLOR,
+    };
+  }, [getCategoryByKey]);
+
+  // Donut + legend: every category with spending this month, largest first. No grouping.
   const donutData = useMemo(() => {
-    const entries = Object.entries(breakdown)
-      .filter(([_, d]) => d.amount > 0)
-      .sort((a, b) => b[1].amount - a[1].amount);
+    return Object.entries(breakdown)
+      .filter(([, d]) => d.amount > 0)
+      .sort((a, b) => b[1].amount - a[1].amount)
+      .map(([key, data]) => ({ key, value: data.amount, percentage: data.percentage, ...categoryInfo(key) }));
+  }, [breakdown, categoryInfo]);
 
-    const top5 = entries.slice(0, 5);
-    const rest = entries.slice(5);
-    const restAmount = rest.reduce((sum, [_, d]) => sum + d.amount, 0);
-
-    const result = top5.map(([key, data]) => {
-      const cat = getCategoryByKey(key);
-      return {
-        key,
-        name: cat?.label || key,
-        icon: cat?.icon || '📦',
-        value: data.amount,
-        percentage: data.percentage,
-        color: getHexColor(cat?.barColor || 'bg-gray-500'),
-      };
+  // Last 6 months: one row per month with every category amount.
+  const barData = useMemo<MonthRow[]>(() => {
+    return Array.from({ length: 6 }, (_, i) => {
+      const m = addMonths(selectedMonth, i - 5);
+      const { breakdown: mb, total: monthTotal } = getCategoryBreakdown(m);
+      const row: MonthRow = { month: getMonthLabel(m).short, rawMonth: m, total: monthTotal };
+      for (const [key, d] of Object.entries(mb)) if (d.amount > 0) row[key] = d.amount;
+      return row;
     });
+  }, [selectedMonth, getCategoryBreakdown]);
 
-    if (restAmount > 0) {
-      // Check if "other" category is already in top 5
-      const otherInTop5 = result.find((r) => r.key === 'other');
-      if (otherInTop5) {
-        // Merge rest into existing "other" entry
-        otherInTop5.value += restAmount;
-        otherInTop5.percentage = total > 0 ? Math.round((otherInTop5.value / total) * 100) : 0;
-      } else {
-        // Create a separate grouped entry as "Demais categorias"
-        result.push({
-          key: OTHERS_KEY,
-          name: OTHERS_LABEL,
-          icon: '📦',
-          value: restAmount,
-          percentage: total > 0 ? Math.round((restAmount / total) * 100) : 0,
-          color: OTHERS_COLOR,
-        });
-      }
-    }
+  // Fixed stacking order = category order in Settings, so segments don't move between months.
+  // Categories no longer in Settings (but with spending) go last.
+  const stackKeys = useMemo(() => {
+    const used = new Set<string>();
+    barData.forEach(row => Object.keys(row).forEach(k => {
+      if (k !== 'month' && k !== 'rawMonth' && k !== 'total') used.add(k);
+    }));
+    const ordered = categories.map(c => c.key).filter(k => used.has(k));
+    const unknown = [...used].filter(k => !ordered.includes(k)).sort();
+    return [...ordered, ...unknown];
+  }, [barData, categories]);
 
-    return result;
-  }, [breakdown, total, getCategoryByKey]);
-
-  const topCategoryKeys = useMemo(() => donutData.map((d) => d.key), [donutData]);
-  const categoryColorMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    donutData.forEach((d) => { map[d.key] = d.color; });
+  // Only the top visible segment of each column gets rounded corners.
+  const topKeyByMonth = useMemo(() => {
+    const map: Record<string, string | undefined> = {};
+    barData.forEach(row => {
+      map[row.rawMonth] = [...stackKeys].reverse().find(k => Number(row[k] ?? 0) > 0);
+    });
     return map;
-  }, [donutData]);
-
-  // Last 6 months stacked bar data
-  const barData = useMemo(() => {
-    const months: string[] = [];
-    for (let i = 5; i >= 0; i--) {
-      months.push(addMonths(selectedMonth, -i));
-    }
-
-    return months.map((m) => {
-      const { breakdown: mb } = getCategoryBreakdown(m);
-      const entry: Record<string, any> = {
-        month: getMonthLabel(m).short,
-        rawMonth: m,
-        _isCurrent: m === selectedMonth,
-      };
-
-      const allEntries = Object.entries(mb).filter(([_, d]) => d.amount > 0);
-
-      topCategoryKeys.forEach((key) => {
-        if (key === OTHERS_KEY) return;
-        entry[key] = mb[key]?.amount || 0;
-      });
-
-      // If "other" is in top keys and we merged rest into it, also grab other months' "other"
-      const othersSum = allEntries
-        .filter(([k]) => !topCategoryKeys.includes(k) || k === OTHERS_KEY)
-        .reduce((sum, [_, d]) => sum + d.amount, 0);
-
-      const otherInTopKeys = topCategoryKeys.includes('other');
-      if (otherInTopKeys) {
-        entry['other'] = (entry['other'] || 0) + othersSum;
-      } else if (topCategoryKeys.includes(OTHERS_KEY) || othersSum > 0) {
-        entry[OTHERS_KEY] = (entry[OTHERS_KEY] || 0) + othersSum;
-      }
-
-      return entry;
-    });
-  }, [selectedMonth, getCategoryBreakdown, topCategoryKeys]);
-
-  const stackKeys = topCategoryKeys.filter((k) => barData.some((d) => (d[k] || 0) > 0));
+  }, [barData, stackKeys]);
 
   const formatCompact = (value: number) => {
     const v = value / 100;
@@ -145,42 +108,42 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
     return v.toFixed(0);
   };
 
-  const BarTooltipContent = ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null;
-    const monthEntry = barData.find((d) => d.month === label);
-    const totalMonth = payload.reduce((s: number, p: any) => s + (p.value || 0), 0);
+  const BarTooltipContent = ({ active, label }: { active?: boolean; label?: string }) => {
+    if (!active) return null;
+    const row = barData.find((d) => d.month === label);
+    if (!row) return null;
+    const items = stackKeys
+      .map(key => ({ key, value: Number(row[key] ?? 0), ...categoryInfo(key) }))
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value);
 
     return (
-      <div className="rounded-lg border px-3 py-2 text-xs" style={{
-        background: 'hsl(220, 18%, 12%)',
-        borderColor: 'hsl(220, 15%, 18%)',
-      }}>
-        <p className="font-medium text-foreground mb-1">
-          {monthEntry?.rawMonth ? getMonthLabel(monthEntry.rawMonth).full : label}
-        </p>
-        <p className="text-muted-foreground mb-1.5">Total: {formatCurrency(totalMonth)}</p>
-        <div className="space-y-0.5">
-          {payload.filter((p: any) => p.value > 0).reverse().map((p: any) => {
-            const cat = getCategoryByKey(p.dataKey);
-            const displayName = p.dataKey === OTHERS_KEY ? OTHERS_BAR_LABEL : (cat?.label || p.dataKey);
-            return (
-              <div key={p.dataKey} className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full" style={{ background: p.fill }} />
-                <span className="text-muted-foreground">{displayName}</span>
-                <span className="ml-auto text-foreground">{formatCurrency(p.value)}</span>
+      <div className={CHART_TOOLTIP_CLASS}>
+        <p className="font-medium leading-tight text-foreground">{getMonthLabel(row.rawMonth).full}</p>
+        <p className="num mb-1.5 text-sm leading-tight text-foreground">{formatCurrency(row.total)}</p>
+        {items.length === 0 ? (
+          <p className="text-subtle">Sem gastos</p>
+        ) : (
+          <div className="border-t border-border pt-1">
+            {items.map(item => (
+              <div key={item.key} className="flex items-center gap-1.5 text-[11px] leading-[1.35]">
+                <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: item.color }} />
+                <span className="shrink-0 text-[10px]">{item.icon}</span>
+                <span className="text-muted-foreground">{item.name}</span>
+                <span className="num ml-auto pl-4 text-foreground">{formatCurrency(item.value)}</span>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
 
-  if (total === 0 && barData.every((d) => stackKeys.every((k) => !d[k]))) {
+  if (total === 0 && stackKeys.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-3xl font-bold text-foreground">{formatCurrency(0)}</p>
-        <p className="text-sm text-muted-foreground mt-1">Total do mês</p>
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">Total do mês</p>
+        <p className="num mt-2 text-4xl font-medium text-foreground">{formatCurrency(0)}</p>
       </div>
     );
   }
@@ -188,44 +151,32 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
   return (
     <div className="space-y-6">
       {/* Total header */}
-      <div className="text-center">
-        <p className="text-3xl font-bold text-foreground">{formatCurrency(total)}</p>
-        <p className="text-sm text-muted-foreground mt-1">Total do mês</p>
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">Total do mês</p>
+        <p className="num mt-2 text-4xl font-medium leading-none text-foreground">{formatCurrency(total)}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
         {/* Left: Donut chart */}
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex-shrink-0">
-            <ResponsiveContainer width={180} height={180}>
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  dataKey="value"
-                  innerRadius="45%"
-                  outerRadius="85%"
-                  paddingAngle={2}
-                  strokeWidth={0}
-                >
-                  {donutData.map((entry) => (
-                    <Cell key={entry.key} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Each slice keeps its category color (barColor from settings). */}
+          <PieChart
+            className="h-[180px] w-[180px] flex-shrink-0"
+            data={donutData.map((d) => ({ key: d.key, name: d.name, value: d.value, color: d.color }))}
+            formatValue={formatCurrency}
+          />
 
           {/* Legend */}
-          <div className="flex flex-col gap-1.5 min-w-0">
+          <div className="flex flex-col gap-2 min-w-0 w-full">
             {donutData.map((entry) => (
               <div key={entry.key} className="flex items-center gap-2 text-xs">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: entry.color }} />
                 <span className="flex-shrink-0">{entry.icon}</span>
                 <span className="text-muted-foreground truncate">{entry.name}</span>
-                <span className="ml-auto text-foreground whitespace-nowrap font-medium">
+                <span className="num ml-auto text-foreground whitespace-nowrap">
                   {formatCurrency(entry.value)}
                 </span>
-                <span className="text-muted-foreground whitespace-nowrap">
+                <span className="num w-9 text-right text-subtle whitespace-nowrap">
                   {entry.percentage}%
                 </span>
               </div>
@@ -235,31 +186,43 @@ export function MonthSummary({ selectedMonth, getCategoryBreakdown }: MonthSumma
 
         {/* Right: Stacked bar chart */}
         <div>
-          <p className="text-sm text-muted-foreground mb-3">Evolução por categoria</p>
+          <p className="text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground mb-4">Últimos 6 meses</p>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={barData} barCategoryGap="20%" maxBarSize={28}>
+            <BarChart data={barData} barCategoryGap="24%" maxBarSize={32}>
+              <CartesianGrid vertical={false} stroke={CHART.grid} strokeDasharray="2 4" />
               <XAxis
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }}
+                tick={CHART.tick}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={formatCompact}
-                tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }}
+                tick={CHART.tick}
                 width={40}
               />
-              <Tooltip content={<BarTooltipContent />} cursor={{ fill: 'hsl(220, 15%, 18%)', radius: 4 }} />
+              <Tooltip
+                content={<BarTooltipContent />}
+                cursor={{ fill: CHART.cursor, radius: 4 }}
+                wrapperStyle={{ zIndex: 50 }}
+                allowEscapeViewBox={{ x: false, y: true }}
+              />
               {stackKeys.map((key) => (
                 <Bar
                   key={key}
                   dataKey={key}
                   stackId="a"
-                  fill={categoryColorMap[key] || OTHERS_COLOR}
-                  radius={key === stackKeys[stackKeys.length - 1] ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                  fill={categoryInfo(key).color}
                   opacity={0.85}
+                  isAnimationActive={false}
+                  shape={(props: RectangleProps & { payload?: MonthRow }) => (
+                    <Rectangle
+                      {...props}
+                      radius={props.payload && topKeyByMonth[props.payload.rawMonth] === key ? [4, 4, 0, 0] : 0}
+                    />
+                  )}
                 />
               ))}
             </BarChart>

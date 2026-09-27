@@ -6,7 +6,8 @@ import { GoalStatusGroup } from './GoalStatusGroup';
 import { GoalForm } from './GoalForm';
 import { LinkTasksDialog } from './LinkTasksDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Target } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,43 +96,43 @@ export const GoalsView = memo(function GoalsView({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <QuarterSelector 
-            value={selectedQuarter} 
-            onChange={setSelectedQuarter} 
-          />
-          <span className="text-sm text-muted-foreground">
-            {activeGoals.length} de {MAX_ACTIVE_GOALS} metas ativas
-          </span>
-        </div>
-        
-        <Button onClick={() => setShowForm(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nova Meta
-        </Button>
-      </div>
+      <PageHeader
+        title="Metas"
+        description={
+          <>
+            <span className="num text-foreground">{activeGoals.length}</span> de <span className="num">{MAX_ACTIVE_GOALS}</span> metas ativas no trimestre
+          </>
+        }
+        actions={
+          <>
+            <QuarterSelector
+              value={selectedQuarter}
+              onChange={setSelectedQuarter}
+            />
+            <Button onClick={() => setShowForm(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nova meta
+            </Button>
+          </>
+        }
+      />
 
       {/* Goals List */}
       {quarterGoals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-            <Target className="h-8 w-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Nenhuma meta neste trimestre
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-strong py-16 px-6 text-center">
+          <h3 className="text-base font-medium text-foreground mb-1">
+            Trimestre sem metas
           </h3>
-          <p className="text-sm text-muted-foreground max-w-sm mb-6">
-            Defina suas metas estratégicas para manter o foco no que realmente importa.
+          <p className="text-sm text-muted-foreground max-w-sm mb-5">
+            Escolha até {MAX_ACTIVE_GOALS} metas e vincule tarefas a elas para medir o progresso.
           </p>
-          <Button onClick={() => setShowForm(true)} className="gap-2">
+          <Button variant="outline" onClick={() => setShowForm(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            Criar primeira meta
+            Criar meta
           </Button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <GoalStatusGroup
             status="active"
             goals={activeGoals}

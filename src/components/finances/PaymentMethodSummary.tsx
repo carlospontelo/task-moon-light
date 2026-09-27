@@ -38,12 +38,12 @@ export function PaymentMethodSummary({ expenses, selectedMonth, isPaid, onToggle
   if (sorted.length === 0) {
     return (
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <CreditCard className="h-4 w-4" />
+        <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          <CreditCard className="h-3.5 w-3.5" strokeWidth={1.5} />
           <span>Por método de pagamento</span>
         </div>
-        <p className="text-xs text-muted-foreground text-center py-4">
-          Nenhuma despesa neste mês
+        <p className="text-xs text-muted-foreground py-4">
+          Os totais por cartão, pix ou boleto aparecem quando houver despesas no mês.
         </p>
       </div>
     );
@@ -51,8 +51,8 @@ export function PaymentMethodSummary({ expenses, selectedMonth, isPaid, onToggle
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <CreditCard className="h-4 w-4" />
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.06em] text-muted-foreground">
+        <CreditCard className="h-3.5 w-3.5" strokeWidth={1.5} />
         <span>Por método de pagamento</span>
       </div>
 
@@ -68,27 +68,27 @@ export function PaymentMethodSummary({ expenses, selectedMonth, isPaid, onToggle
         return (
           <div
             key={key}
-            className="rounded-xl border border-border bg-card p-4 space-y-2"
+            className="rounded-lg border border-border bg-secondary p-4 space-y-2.5"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-base">{icon}</span>
                 <span className="text-sm font-medium text-foreground">{label}</span>
               </div>
-              <span className="text-sm font-semibold text-foreground">
+              <span className="num text-sm text-foreground">
                 {formatCurrency(amount)}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Progress value={percentage} className="h-1.5 flex-1" />
-              <span className="text-xs text-muted-foreground w-10 text-right">
+              <Progress value={percentage} className="h-1 flex-1 bg-border [&>div]:bg-muted-foreground" />
+              <span className="num text-xs text-subtle w-10 text-right">
                 {percentage.toFixed(0)}%
               </span>
             </div>
 
             {requiresManual && onTogglePaid && (
               <div className="pt-1 space-y-1.5">
-                <p className="text-[10px] text-muted-foreground">
+                <p className="num text-[11px] text-primary">
                   {paidCount} de {methodExpenses.length} pagas
                 </p>
                 {methodExpenses.map(exp => (
@@ -111,7 +111,7 @@ export function PaymentMethodSummary({ expenses, selectedMonth, isPaid, onToggle
                       {exp.name}
                     </span>
                     <span className={cn(
-                      "text-xs text-muted-foreground",
+                      "num text-xs text-muted-foreground",
                       isPaid(exp.id, selectedMonth) && "line-through"
                     )}>
                       {formatCurrency(exp.amount)}
@@ -125,7 +125,7 @@ export function PaymentMethodSummary({ expenses, selectedMonth, isPaid, onToggle
               <div className="flex justify-end pt-1">
                 <button
                   onClick={() => setDetailMethod({ key, expenses: methodExpenses })}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                  className="flex items-center gap-1 text-xs text-subtle hover:text-foreground cursor-pointer transition-colors"
                 >
                   Ver detalhes
                   <ChevronRight className="h-3.5 w-3.5" />
