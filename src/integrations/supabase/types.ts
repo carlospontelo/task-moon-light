@@ -226,6 +226,42 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          month: string
+          recurring: boolean
+          series_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind: string
+          month: string
+          recurring?: boolean
+          series_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          month?: string
+          recurring?: boolean
+          series_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           abandon_reason: string | null
@@ -377,6 +413,7 @@ export type Database = {
       tasks: {
         Row: {
           board_group: string
+          completed_at: string | null
           created_at: string
           date: string
           id: string
@@ -389,6 +426,7 @@ export type Database = {
         }
         Insert: {
           board_group?: string
+          completed_at?: string | null
           created_at?: string
           date: string
           id?: string
@@ -401,6 +439,7 @@ export type Database = {
         }
         Update: {
           board_group?: string
+          completed_at?: string | null
           created_at?: string
           date?: string
           id?: string
