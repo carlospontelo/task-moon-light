@@ -9,6 +9,8 @@ export function useTasks() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  // True once rows come back with a `completed_at` column (requires the migration).
+  const [hasCompletionTracking, setHasCompletionTracking] = useState(false);
 
   const mapRow = (t: any): Task => ({
     id: t.id,
@@ -20,7 +22,12 @@ export function useTasks() {
     pinned: t.pinned ?? false,
     boardGroup: (t.board_group as BoardGroup) || 'today',
     sortOrder: t.sort_order ?? 0,
+    completedAt: 'completed_at' in t ? t.completed_at : undefined,
   });
+
+  const detectTracking = (row: object | null | undefined) => {
+    if (row && 'completed_at' in row) setHasCompletionTracking(true);
+  };
 
   const fetchTasks = useCallback(async () => {
     if (!user) { setTasks([]); setLoading(false); return; }
@@ -31,7 +38,10 @@ export function useTasks() {
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (!error && data) setTasks(data.map(mapRow));
+    if (!error && data) {
+      setTasks(data.map(mapRow));
+      detectTracking(data[0]);
+    }
     setLoading(false);
   }, [user]);
 
@@ -43,6 +53,7 @@ export function useTasks() {
     const channel = supabase
       .channel('tasks-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.id}` }, (payload) => {
+        detectTracking(payload.new);
         if (payload.eventType === 'INSERT') {
           setTasks((prev) => {
             if (prev.some((t) => t.id === (payload.new as any).id)) {
@@ -87,7 +98,14 @@ export function useTasks() {
   const updateTaskStatus = useCallback(async (id: string, status: TaskStatus) => {
     setTasks(prev => {
       const rollback = prev;
-      const updated = prev.map(t => t.id === id ? { ...t, status } : t);
+      const updated = prev.map(t => {
+        if (t.id !== id) return t;
+        // Mirror the DB trigger optimistically so progress updates instantly.
+        const completedAt = t.completedAt === undefined ? undefined
+          : status === 'completed' ? (t.status === 'completed' ? t.completedAt : new Date().toISOString())
+          : null;
+        return { ...t, status, completedAt };
+      });
       supabase.from('tasks').update({ status }).eq('id', id).then(({ error }) => {
         if (error) setTasks(rollback);
       });
@@ -168,5 +186,5 @@ export function useTasks() {
     }
   }, []);
 
-  return { tasks, loading, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, getTasksByDate, reorderTasks };
+  return { tasks, loading, hasCompletionTracking, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, getTasksByDate, reorderTasks };
 }

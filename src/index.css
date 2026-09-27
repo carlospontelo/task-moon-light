@@ -96,6 +96,10 @@
   .animate-scale-in {
     animation: scaleIn 0.2s ease-out forwards;
   }
+
+  .animate-bump {
+    animation: bump 200ms ease-out;
+  }
 }
 
 @keyframes fadeIn {
@@ -106,6 +110,12 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bump {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
 }
 
 @keyframes scaleIn {

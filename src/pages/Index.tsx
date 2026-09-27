@@ -18,7 +18,7 @@ const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const [showMigration, setShowMigration] = useState(false);
   const [migrationDone, setMigrationDone] = useState(false);
-  const { tasks, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, reorderTasks } = useTasks();
+  const { tasks, hasCompletionTracking, addTask, updateTaskStatus, updateTask, moveTask, togglePin, deleteTask, reorderTasks } = useTasks();
   const {
     expenses, addExpense, updateExpense, deleteExpense, togglePaid, isPaid,
     getExpensesByMonthAndType, getCategoryBreakdown, getTypeTotal,
@@ -103,7 +103,7 @@ const Index = () => {
             onMoveTask={moveTask}
             onDelete={deleteTask}
             onReorderTasks={reorderTasks}
-            protectedTaskIds={goals.flatMap(g => g.linkedTaskIds)}
+            hasCompletionTracking={hasCompletionTracking}
           />
         )}
         {activeTab === 'goals' && (

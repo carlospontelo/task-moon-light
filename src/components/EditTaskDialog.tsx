@@ -9,7 +9,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Task, TaskStatus, BoardGroup } from '@/types/task';
-import { createdDayKey, isFocus, isSomeday, FOCUS_LIMIT_MESSAGE } from '@/lib/task-sections';
+import { createdDayKey } from '@/lib/task-stats';
 import { useSettings } from '@/contexts/SettingsContext';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -42,22 +42,6 @@ interface EditTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (id: string, updates: { date?: string; tag?: string | null; boardGroup?: BoardGroup; status?: TaskStatus }) => void;
-  /** Focus already holds the maximum number of tasks. */
-  focusFull?: boolean;
-}
-
-type Placement = 'list' | 'focus' | 'someday';
-
-const PLACEMENTS: { value: Placement; label: string }[] = [
-  { value: 'list', label: 'Lista' },
-  { value: 'focus', label: 'Foco' },
-  { value: 'someday', label: 'Algum dia' },
-];
-
-function placementOf(task: Task): Placement {
-  if (isFocus(task)) return 'focus';
-  if (isSomeday(task)) return 'someday';
-  return 'list';
 }
 
 function SortableSubtaskItem({ subtask, onToggle, onDelete }: { subtask: Subtask; onToggle: (id: string) => void; onDelete: (id: string) => void }) {
@@ -103,12 +87,11 @@ function SortableSubtaskItem({ subtask, onToggle, onDelete }: { subtask: Subtask
   );
 }
 
-export function EditTaskDialog({ task, open, onOpenChange, onSave, focusFull = false }: EditTaskDialogProps) {
+export function EditTaskDialog({ task, open, onOpenChange, onSave }: EditTaskDialogProps) {
   const { tags } = useSettings();
   const { getSubtasksByTaskId, getSubtaskProgress, addSubtask, toggleSubtask, deleteSubtask, reorderSubtasks } = useSubtasksContext();
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [tag, setTag] = useState<string | undefined>(undefined);
-  const [placement, setPlacement] = useState<Placement>('list');
   const [status, setStatus] = useState<TaskStatus>('pending');
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -122,7 +105,6 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave, focusFull = f
   if (task && open && !initialized) {
     setDate(parseISO(task.date));
     setTag(task.tag);
-    setPlacement(placementOf(task));
     setStatus(task.status);
     setInitialized(true);
   }
@@ -139,16 +121,9 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave, focusFull = f
 
   const handleSave = () => {
     if (!task || !date) return;
-    // Keep the original group when the task stays in the list (e.g. 'this_week').
-    const boardGroup: BoardGroup =
-      placement === 'focus' ? 'pinned'
-      : placement === 'someday' ? 'standby'
-      : task.boardGroup === 'pinned' || task.boardGroup === 'standby' ? 'today'
-      : task.boardGroup;
     onSave(task.id, {
       date: format(date, 'yyyy-MM-dd'),
       tag: tag || null,
-      boardGroup,
       status,
     });
     onOpenChange(false);
@@ -172,10 +147,9 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave, focusFull = f
 
   if (!task) return null;
 
-  // A date equal to the creation day means "no due date" (see task-sections).
+  // A date equal to the creation day means "no deadline".
   const createdDay = createdDayKey(task);
   const noDueDate = !date || format(date, 'yyyy-MM-dd') === createdDay;
-  const focusBlocked = focusFull && placementOf(task) !== 'focus';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -264,40 +238,11 @@ export function EditTaskDialog({ task, open, onOpenChange, onSave, focusFull = f
                   )}
                 >
                   <RadioGroupItem value={value} id={`status-${value}`} className="sr-only" />
-                  <Icon className={cn("h-3.5 w-3.5", value === 'in_progress' && status === value && "animate-spin")} />
+                  <Icon className={cn("h-3.5 w-3.5", value === 'in_progress' && status === value && "motion-safe:animate-spin text-primary")} />
                   {label}
                 </Label>
               ))}
             </RadioGroup>
-          </div>
-
-          {/* Placement: list / focus / someday */}
-          <div className="space-y-2">
-            <label className="text-xs text-muted-foreground font-medium">Onde fica</label>
-            <div role="radiogroup" className="grid grid-cols-3 gap-1 rounded-lg border border-border bg-secondary p-1">
-              {PLACEMENTS.map(({ value, label }) => {
-                const disabled = value === 'focus' && focusBlocked;
-                const selected = placement === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    disabled={disabled}
-                    onClick={() => setPlacement(value)}
-                    className={cn(
-                      "h-8 rounded-md text-xs transition-colors",
-                      selected ? "bg-surface-3 text-foreground" : "text-muted-foreground hover:text-foreground",
-                      disabled && "cursor-not-allowed opacity-40 hover:text-muted-foreground",
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-            {focusBlocked && <p className="text-[11px] text-subtle">{FOCUS_LIMIT_MESSAGE}</p>}
           </div>
 
           {/* Subtasks section */}
